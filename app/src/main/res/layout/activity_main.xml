@@ -5,6 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#121212"
     tools:context=".MainActivity">
 
     <org.osmdroid.views.MapView
@@ -16,14 +17,17 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Top GPS Status & Coordinates Overlay Card -->
+    <!-- Top GPS Status & Coordinates Floating Glass Card -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardGpsOverlay"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="6dp"
+        android:layout_margin="14dp"
+        app:cardBackgroundColor="#EE1E2923"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:strokeColor="#33FFFFFF"
+        app:strokeWidth="1dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -32,21 +36,45 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="10dp">
-
-            <TextView
-                android:id="@+id/tvGpsStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Status: Acquiring GPS signal..."
-                android:textColor="#D32F2F"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+            android:padding="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvGpsDot"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🟢 "
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/tvGpsStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Status: Acquiring GPS signal..."
+                    android:textColor="#81C784"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Offline Mode"
+                    android:textColor="#B0BEC5"
+                    android:textSize="11sp"
+                    android:textStyle="italic" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -55,7 +83,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Lat: --"
-                    android:textColor="@color/black"
+                    android:textColor="#FFFFFF"
                     android:textSize="12sp" />
 
                 <TextView
@@ -64,7 +92,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="Lon: --"
-                    android:textColor="@color/black"
+                    android:textColor="#FFFFFF"
                     android:textSize="12sp" />
 
             </LinearLayout>
@@ -73,15 +101,18 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Middle Nearest Waypoints Stats Card (Phase 5) -->
+    <!-- Live Trail & Nearest Waypoints Card with Route Buttons -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardNearestOverlay"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
+        android:layout_marginHorizontal="14dp"
         android:layout_marginTop="6dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="6dp"
+        app:cardBackgroundColor="#EE1E2923"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="8dp"
+        app:strokeColor="#33FFFFFF"
+        app:strokeWidth="1dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/cardGpsOverlay">
@@ -90,66 +121,111 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="10dp">
+            android:padding="12dp">
 
-            <TextView
-                android:id="@+id/tvNearestHeader"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="📊 Live Trail &amp; Waypoint Tracking"
-                android:textColor="#1976D2"
-                android:textSize="13sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvNearestHeader"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="📊 Live Trail Tracking"
+                    android:textColor="#64B5F6"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCreateRoute"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="0dp"
+                    android:text="🛣️ Create Route"
+                    android:textColor="#64B5F6"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnClearRoute"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="4dp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="0dp"
+                    android:text="❌ Clear"
+                    android:textColor="#FF8A80"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
 
             <TextView
                 android:id="@+id/tvNearestWaypoint"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
+                android:layout_marginTop="4dp"
                 android:text="📍 Nearest Waypoint: Calculating..."
-                android:textColor="@color/black"
+                android:textColor="#FFFFFF"
                 android:textSize="12sp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvNearestWater"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:text="💧 Nearest Water: Calculating..."
-                android:textColor="#0288D1"
-                android:textSize="11sp" />
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tvNearestShelter"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:text="🛖 Nearest Shelter: Calculating..."
-                android:textColor="#E65100"
-                android:textSize="11sp" />
+                <TextView
+                    android:id="@+id/tvNearestWater"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="💧 Water: --"
+                    android:textColor="#4FC3F7"
+                    android:textSize="11sp" />
 
-            <TextView
-                android:id="@+id/tvNearestExit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="1dp"
-                android:text="🚪 Nearest Exit: Calculating..."
-                android:textColor="#388E3C"
-                android:textSize="11sp" />
+                <TextView
+                    android:id="@+id/tvNearestShelter"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🛖 Shelter: --"
+                    android:textColor="#FFB74D"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/tvNearestExit"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🚪 Exit: --"
+                    android:textColor="#81C784"
+                    android:textSize="11sp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Bottom On-Device LLM Chat Assistant Card (Phase 6) -->
+    <!-- Bottom On-Device AI Chat Assistant Card (Phase 6 Premium UI) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardChatOverlay"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
+        android:layout_margin="14dp"
+        app:cardBackgroundColor="#FA2A1B3D"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="12dp"
+        app:strokeColor="#449C27B0"
+        app:strokeWidth="1dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -158,32 +234,107 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="14dp">
 
-            <TextView
-                android:id="@+id/tvChatHeader"
-                android:layout_width="wrap_content"
+            <!-- Chat Title Bar & Status -->
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🤖 TrailSense AI Assistant (Offline)"
-                android:textColor="#673AB7"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
+                <TextView
+                    android:id="@+id/tvChatHeader"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🤖 TrailSense AI Guide"
+                    android:textColor="#E1BEE7"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="#33BA68C8"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="3dp"
+                    android:text="100% Offline AI"
+                    android:textColor="#CE93D8"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- Quick Action Suggestion Chips -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipShelter"
+                        style="@style/Widget.MaterialComponents.Chip.Action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="6dp"
+                        android:text="🛖 Nearest Shelter?"
+                        android:textColor="#FFFFFF"
+                        app:chipBackgroundColor="#447B1FA2"
+                        app:chipStrokeColor="#88BA68C8"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipWater"
+                        style="@style/Widget.MaterialComponents.Chip.Action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:layout_marginEnd="6dp"
+                        android:text="💧 Water Source?"
+                        android:textColor="#FFFFFF"
+                        app:chipBackgroundColor="#440288D1"
+                        app:chipStrokeColor="#884FC3F7"
+                        app:chipStrokeWidth="1dp" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipExit"
+                        style="@style/Widget.MaterialComponents.Chip.Action"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="🚪 Emergency Exit?"
+                        android:textColor="#FFFFFF"
+                        app:chipBackgroundColor="#44388E3C"
+                        app:chipStrokeColor="#8881C784"
+                        app:chipStrokeWidth="1dp" />
+
+                </LinearLayout>
+
+            </HorizontalScrollView>
+
+            <!-- AI Response Display Bubble -->
             <TextView
                 android:id="@+id/tvChatOutput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:background="#F5F5F5"
-                android:padding="8dp"
-                android:text="Ask me anything about your current trail position, shelters, or water sources!"
-                android:textColor="#333333"
+                android:layout_marginTop="8dp"
+                android:background="#33FFFFFF"
+                android:padding="10dp"
+                android:text="Ask me anything about shelters, water points, or your position!"
+                android:textColor="#F3E5F5"
                 android:textSize="12sp" />
 
+            <!-- Input Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="10dp"
+                android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <EditText
@@ -191,20 +342,25 @@
                     android:layout_width="0dp"
                     android:layout_height="44dp"
                     android:layout_weight="1"
-                    android:background="@android:drawable/editbox_background"
-                    android:hint="e.g. How far is the nearest shelter?"
+                    android:background="#22FFFFFF"
+                    android:hint="Ask your trail question..."
+                    android:textColorHint="#90E1BEE7"
                     android:inputType="text"
-                    android:paddingHorizontal="10dp"
+                    android:paddingHorizontal="12dp"
+                    android:textColor="#FFFFFF"
                     android:textSize="13sp" />
 
-                <Button
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnSendChat"
                     android:layout_width="wrap_content"
                     android:layout_height="44dp"
                     android:layout_marginStart="8dp"
                     android:text="Ask"
                     android:textAllCaps="false"
-                    android:textSize="13sp" />
+                    android:textColor="#FFFFFF"
+                    android:textSize="13sp"
+                    app:backgroundTint="#8E24AA"
+                    app:cornerRadius="10dp" />
 
             </LinearLayout>
 
@@ -212,14 +368,17 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Location Re-center Floating Action Button -->
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="12dp"
+        android:layout_marginEnd="14dp"
+        android:layout_marginBottom="14dp"
         android:contentDescription="Center Location"
+        app:backgroundTint="#8E24AA"
         app:srcCompat="@android:drawable/ic_menu_mylocation"
+        app:tint="#FFFFFF"
         app:layout_constraintBottom_toTopOf="@id/cardChatOverlay"
         app:layout_constraintEnd_toEndOf="parent" />
 

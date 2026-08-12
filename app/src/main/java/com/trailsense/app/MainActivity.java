@@ -9,6 +9,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -20,6 +21,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.json.JSONArray;
@@ -30,6 +33,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
+import org.osmdroid.views.overlay.Polyline;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
 import org.osmdroid.views.overlay.compass.CompassOverlay;
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
@@ -50,22 +54,28 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private CompassOverlay compassOverlay;
     private RotationGestureOverlay rotationGestureOverlay;
     private ScaleBarOverlay scaleBarOverlay;
+    private Polyline navigationPolyline;
     private FloatingActionButton fabLocation;
 
     private TextView tvGpsStatus;
     private TextView tvLatitude;
     private TextView tvLongitude;
 
-    // Phase 5 Position-to-Route Matching UI Views
+    // Phase 5 Position-to-Route Matching UI Views & Buttons
     private TextView tvNearestWaypoint;
     private TextView tvNearestWater;
     private TextView tvNearestShelter;
     private TextView tvNearestExit;
+    private MaterialButton btnCreateRoute;
+    private MaterialButton btnClearRoute;
 
-    // Phase 6 On-Device LLM Chat UI Views
+    // Phase 6 On-Device LLM Chat UI Views & Chips
     private TextView tvChatOutput;
     private EditText etChatInput;
     private Button btnSendChat;
+    private Chip chipShelter;
+    private Chip chipWater;
+    private Chip chipExit;
     private LlmAssistant llmAssistant;
 
     private LocationManager locationManager;
@@ -73,6 +83,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private ActivityResultLauncher<String[]> locationPermissionRequest;
     private List<Waypoint> waypointList = new ArrayList<>();
     private List<Marker> waypointMarkers = new ArrayList<>();
+    private Waypoint selectedTargetWaypoint = null;
+    private Waypoint nearestOverallWaypoint = null;
+    private Waypoint nearestShelterWaypoint = null;
+    private Waypoint nearestWaterWaypoint = null;
+    private Waypoint nearestExitWaypoint = null;
     private boolean waypointsAnchoredToGPS = false;
 
     @Override
@@ -92,19 +107,57 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         tvLatitude = findViewById(R.id.tvLatitude);
         tvLongitude = findViewById(R.id.tvLongitude);
 
-        // Phase 5 UI Views
+        // Phase 5 UI Views & Route Buttons
         tvNearestWaypoint = findViewById(R.id.tvNearestWaypoint);
         tvNearestWater = findViewById(R.id.tvNearestWater);
         tvNearestShelter = findViewById(R.id.tvNearestShelter);
         tvNearestExit = findViewById(R.id.tvNearestExit);
+        btnCreateRoute = findViewById(R.id.btnCreateRoute);
+        btnClearRoute = findViewById(R.id.btnClearRoute);
 
         // Phase 6 UI Views & On-Device LLM Engine
         tvChatOutput = findViewById(R.id.tvChatOutput);
         etChatInput = findViewById(R.id.etChatInput);
         btnSendChat = findViewById(R.id.btnSendChat);
+        chipShelter = findViewById(R.id.chipShelter);
+        chipWater = findViewById(R.id.chipWater);
+        chipExit = findViewById(R.id.chipExit);
+        
         llmAssistant = new LlmAssistant(this);
 
         btnSendChat.setOnClickListener(v -> submitGroundedLlmQuery());
+
+        // Quick Suggestion Chips Click Handlers with Auto-Routing
+        chipShelter.setOnClickListener(v -> {
+            etChatInput.setText("How far is the nearest shelter?");
+            if (nearestShelterWaypoint != null) {
+                selectedTargetWaypoint = nearestShelterWaypoint;
+                createRouteToTarget();
+            }
+            submitGroundedLlmQuery();
+        });
+
+        chipWater.setOnClickListener(v -> {
+            etChatInput.setText("Where can I find drinking water?");
+            if (nearestWaterWaypoint != null) {
+                selectedTargetWaypoint = nearestWaterWaypoint;
+                createRouteToTarget();
+            }
+            submitGroundedLlmQuery();
+        });
+
+        chipExit.setOnClickListener(v -> {
+            etChatInput.setText("Where is the nearest emergency exit?");
+            if (nearestExitWaypoint != null) {
+                selectedTargetWaypoint = nearestExitWaypoint;
+                createRouteToTarget();
+            }
+            submitGroundedLlmQuery();
+        });
+
+        // Route creation buttons
+        btnCreateRoute.setOnClickListener(v -> createRouteToTarget());
+        btnClearRoute.setOnClickListener(v -> clearRouteLine());
 
         // Map engine rendering & High-DPI text scaling
         mapView.setTileSource(TileSourceFactory.MAPNIK);
@@ -149,6 +202,58 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         setupPermissionLauncher();
         checkAndRequestLocationPermissions();
+    }
+
+    private void createRouteToTarget() {
+        Waypoint target = selectedTargetWaypoint != null ? selectedTargetWaypoint : nearestOverallWaypoint;
+        if (target == null) {
+            Toast.makeText(this, "No target waypoint available for routing.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        selectedTargetWaypoint = target;
+        drawNavigationLineToTarget(target);
+        btnClearRoute.setVisibility(View.VISIBLE);
+        Toast.makeText(this, "🎯 Route created to " + target.getName(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void clearRouteLine() {
+        if (navigationPolyline != null) {
+            mapView.getOverlays().remove(navigationPolyline);
+            navigationPolyline = null;
+            mapView.invalidate();
+        }
+        selectedTargetWaypoint = null;
+        btnClearRoute.setVisibility(View.GONE);
+        Toast.makeText(this, "Route cleared.", Toast.LENGTH_SHORT).show();
+    }
+
+    private void drawNavigationLineToTarget(Waypoint target) {
+        GeoPoint userGeo = null;
+        if (myLocationOverlay != null && myLocationOverlay.getMyLocation() != null) {
+            userGeo = myLocationOverlay.getMyLocation();
+        } else if (lastKnownLocation != null) {
+            userGeo = new GeoPoint(lastKnownLocation.getLatitude(), lastKnownLocation.getLongitude());
+        }
+
+        if (userGeo == null) return;
+
+        List<GeoPoint> linePoints = new ArrayList<>();
+        linePoints.add(userGeo);
+        linePoints.add(new GeoPoint(target.getLatitude(), target.getLongitude()));
+
+        if (navigationPolyline != null) {
+            mapView.getOverlays().remove(navigationPolyline);
+        }
+
+        navigationPolyline = new Polyline(mapView);
+        navigationPolyline.setPoints(linePoints);
+        navigationPolyline.getOutlinePaint().setColor(Color.parseColor("#1976D2")); // Vibrant trail blue line
+        navigationPolyline.getOutlinePaint().setStrokeWidth(14.0f);
+        
+        // Insert polyline at index 0 so it renders under markers and overlay clicks
+        mapView.getOverlays().add(0, navigationPolyline);
+        mapView.invalidate();
     }
 
     /**
@@ -232,9 +337,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 Marker marker = new Marker(mapView);
                 marker.setPosition(pt);
                 marker.setTitle("📍 " + wp.getName());
-                marker.setSnippet("[" + wp.getCategory().toUpperCase() + "]\n" + wp.getDescription());
+                marker.setSnippet("[" + wp.getCategory().toUpperCase() + "] Route created!");
                 marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
                 
+                // Tapping marker pin draws route immediately and shows info popup
+                marker.setOnMarkerClickListener((selectedMarker, map) -> {
+                    selectedMarker.showInfoWindow();
+                    selectedTargetWaypoint = wp;
+                    createRouteToTarget();
+                    return true;
+                });
+
                 waypointMarkers.add(marker);
                 mapView.getOverlays().add(marker);
             }
@@ -321,24 +434,33 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         }
 
+        this.nearestOverallWaypoint = nearestOverall;
+        this.nearestShelterWaypoint = nearestShelter;
+        this.nearestWaterWaypoint = nearestWater;
+        this.nearestExitWaypoint = nearestExit;
+
         if (nearestOverall != null) {
             tvNearestWaypoint.setText(String.format("📍 Nearest: %s (%s)",
                     nearestOverall.getName(), formatDistance(minDistanceOverall)));
         }
 
         if (nearestWater != null) {
-            tvNearestWater.setText(String.format("💧 Nearest Water: %s (%s)",
+            tvNearestWater.setText(String.format("💧 Water: %s (%s)",
                     nearestWater.getName(), formatDistance(minDistanceWater)));
         }
 
         if (nearestShelter != null) {
-            tvNearestShelter.setText(String.format("🛖 Nearest Shelter: %s (%s)",
+            tvNearestShelter.setText(String.format("🛖 Shelter: %s (%s)",
                     nearestShelter.getName(), formatDistance(minDistanceShelter)));
         }
 
         if (nearestExit != null) {
-            tvNearestExit.setText(String.format("🚪 Nearest Exit: %s (%s)",
+            tvNearestExit.setText(String.format("🚪 Exit: %s (%s)",
                     nearestExit.getName(), formatDistance(minDistanceExit)));
+        }
+
+        if (selectedTargetWaypoint != null && navigationPolyline != null) {
+            drawNavigationLineToTarget(selectedTargetWaypoint);
         }
     }
 
@@ -463,7 +585,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public void onLocationChanged(@NonNull Location location) {
         lastKnownLocation = location;
         tvGpsStatus.setText("Status: Location Signal Locked");
-        tvGpsStatus.setTextColor(Color.parseColor("#2E7D32"));
+        tvGpsStatus.setTextColor(Color.parseColor("#81C784"));
 
         tvLatitude.setText(String.format(Locale.US, "Lat: %.6f°", location.getLatitude()));
         tvLongitude.setText(String.format(Locale.US, "Lon: %.6f°", location.getLongitude()));

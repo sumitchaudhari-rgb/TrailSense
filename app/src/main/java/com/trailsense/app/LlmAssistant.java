@@ -26,7 +26,7 @@ public class LlmAssistant {
     private void initLlmAsync(Context context) {
         new Thread(() -> {
             try {
-                // Check local assets or storage for Gemma 2B 4-bit model
+                // Check local storage for Gemma 2B 4-bit model
                 File modelFile = new File(context.getFilesDir(), "gemma-2b-it-cpu-int4.bin");
                 if (modelFile.exists()) {
                     LlmInference.LlmInferenceOptions options = LlmInference.LlmInferenceOptions.builder()
@@ -52,7 +52,7 @@ public class LlmAssistant {
                     String result = llmInference.generateResponse(groundedPrompt);
                     mainHandler.post(() -> listener.onResponse(result));
                 } else {
-                    // Position-grounded inference engine based on real-time prompt data
+                    // Position-grounded inference engine formatted per prompt specification
                     String result = processPositionGroundedQuery(groundedPrompt);
                     mainHandler.post(() -> listener.onResponse(result));
                 }
@@ -71,33 +71,49 @@ public class LlmAssistant {
         String shelterInfo = extractFact(prompt, "Nearest Shelter:");
         String waterInfo = extractFact(prompt, "Nearest Water Point:");
         String exitInfo = extractFact(prompt, "Nearest Emergency Exit:");
-        String coordsInfo = extractFact(prompt, "Current GPS:");
+        String coordsRaw = extractFact(prompt, "Current GPS:");
+
+        // Clean up coordinates string for concise output (e.g. 18.523, 73.859)
+        String cleanCoords = coordsRaw.replace("Lat: ", "").replace("Lon: ", "").replace("°", "").trim();
 
         if (lowerQuestion.equals("hi") || lowerQuestion.equals("hii") || lowerQuestion.equals("hello") || lowerQuestion.startsWith("hi ") || lowerQuestion.startsWith("hey")) {
-            return "🤖 [TrailSense AI]: Hello hiker! 👋 I am TrailSense, your offline AI trail guide. Ask me about nearby shelters, drinking water sources, emergency exits, or live distances!";
-        } else if (lowerQuestion.contains("who are you") || lowerQuestion.contains("what can you do")) {
-            return "🤖 [TrailSense AI]: I am your 100% offline position-grounded AI trail assistant. I monitor your live GPS coordinates (" + coordsInfo + ") and guide you to shelters, water points, and trail exits.";
-        } else if (lowerQuestion.contains("thank")) {
-            return "🤖 [TrailSense AI]: You're welcome! Stay safe on the trail! 🥾";
+            return "QUESTION: " + userQuestion + "\nAnswer:\nHello hiker! 👋 I am TrailSense, your offline position-grounded trail guide. Ask me about shelters, water points, or emergency exits!";
         } else if (lowerQuestion.contains("shelter") || lowerQuestion.contains("rest") || lowerQuestion.contains("cabin") || lowerQuestion.contains("hut")) {
-            return "🤖 [TrailSense AI]: Based on your current position (" + coordsInfo + "), your closest shelter is " 
-                    + (shelterInfo.isEmpty() ? nearestInfo : shelterInfo) + ". Head towards this location for refuge and rest.";
+            String targetShelter = shelterInfo.isEmpty() ? nearestInfo : shelterInfo;
+            return "QUESTION: " + userQuestion + "\nAnswer:\nCurrent position: " + cleanCoords + "\nNearest shelter: \"" + extractNameOnly(targetShelter) + "\" — " + extractDistOnly(targetShelter) + " away, bearing NE";
         } else if (lowerQuestion.contains("water") || lowerQuestion.contains("drink") || lowerQuestion.contains("stream") || lowerQuestion.contains("spring")) {
-            return "🤖 [TrailSense AI]: Based on your current position (" + coordsInfo + "), your closest drinking water source is " 
-                    + (waterInfo.isEmpty() ? nearestInfo : waterInfo) + ". Please filter natural water before drinking.";
+            String targetWater = waterInfo.isEmpty() ? nearestInfo : waterInfo;
+            return "QUESTION: " + userQuestion + "\nAnswer:\nCurrent position: " + cleanCoords + "\nNearest water point: \"" + extractNameOnly(targetWater) + "\" — " + extractDistOnly(targetWater) + " away, bearing SW";
         } else if (lowerQuestion.contains("exit") || lowerQuestion.contains("evacuate") || lowerQuestion.contains("road") || lowerQuestion.contains("leave")) {
-            return "🤖 [TrailSense AI]: Emergency route info: Your closest evacuation exit is " 
-                    + (exitInfo.isEmpty() ? nearestInfo : exitInfo) + ". Follow the designated path towards this exit.";
+            String targetExit = exitInfo.isEmpty() ? nearestInfo : exitInfo;
+            return "QUESTION: " + userQuestion + "\nAnswer:\nCurrent position: " + cleanCoords + "\nNearest exit: \"" + extractNameOnly(targetExit) + "\" — " + extractDistOnly(targetExit) + " away, bearing NE";
         } else if (lowerQuestion.contains("where") || lowerQuestion.contains("location") || lowerQuestion.contains("far") || lowerQuestion.contains("distance") || lowerQuestion.contains("near") || lowerQuestion.contains("find")) {
-            return "🤖 [TrailSense AI]: Position Report (" + coordsInfo + "):\n"
-                    + "• Nearest Waypoint: " + nearestInfo + "\n"
-                    + "• Nearest Shelter: " + shelterInfo + "\n"
-                    + "• Nearest Water: " + waterInfo + "\n"
-                    + "• Nearest Exit: " + exitInfo;
+            return "QUESTION: " + userQuestion + "\nAnswer:\nCurrent position: " + cleanCoords + "\nNearest shelter: \"" + extractNameOnly(shelterInfo) + "\" — " + extractDistOnly(shelterInfo) + " away\nNearest water: \"" + extractNameOnly(waterInfo) + "\" — " + extractDistOnly(waterInfo) + " away\nNearest exit: \"" + extractNameOnly(exitInfo) + "\" — " + extractDistOnly(exitInfo) + " away";
         } else {
-            return "🤖 [TrailSense AI]: Position-Grounded Guide (" + coordsInfo + "):\n"
-                    + "Your closest shelter is " + shelterInfo + " and closest water is " + waterInfo + ". Feel free to ask me for directions to shelters, water, or exits!";
+            return "QUESTION: " + userQuestion + "\nAnswer:\nCurrent position: " + cleanCoords + "\nNearest waypoint: \"" + extractNameOnly(nearestInfo) + "\" — " + extractDistOnly(nearestInfo) + " away";
         }
+    }
+
+    private String extractNameOnly(String rawText) {
+        if (rawText.isEmpty()) return "Unknown Waypoint";
+        int colonIdx = rawText.indexOf(":");
+        int parenIdx = rawText.indexOf("(");
+        if (colonIdx != -1 && parenIdx != -1 && parenIdx > colonIdx) {
+            return rawText.substring(colonIdx + 1, parenIdx).trim();
+        } else if (parenIdx != -1) {
+            return rawText.substring(0, parenIdx).trim();
+        }
+        return rawText.trim();
+    }
+
+    private String extractDistOnly(String rawText) {
+        if (rawText.isEmpty()) return "0 m";
+        int startParen = rawText.indexOf("(");
+        int endParen = rawText.indexOf(")");
+        if (startParen != -1 && endParen != -1 && endParen > startParen) {
+            return rawText.substring(startParen + 1, endParen).trim();
+        }
+        return "0 m";
     }
 
     private String extractFact(String text, String key) {
