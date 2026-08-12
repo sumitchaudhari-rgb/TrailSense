@@ -166,6 +166,36 @@
 91-->[androidx.profileinstaller:profileinstaller:1.3.0] C:\Users\sumit\.gradle\caches\transforms-4\c3106b3b01497ea36ce06a33e77170f4\transformed\profileinstaller-1.3.0\AndroidManifest.xml:50:25-92
 92            </intent-filter>
 93        </receiver>
-94    </application>
-95
-96</manifest>
+94
+95        <service
+95-->[com.google.android.datatransport:transport-backend-cct:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\b5cc604ebd24991a76e00a1ef0b8e216\transformed\transport-backend-cct-3.1.0\AndroidManifest.xml:29:9-35:19
+96            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+96-->[com.google.android.datatransport:transport-backend-cct:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\b5cc604ebd24991a76e00a1ef0b8e216\transformed\transport-backend-cct-3.1.0\AndroidManifest.xml:30:13-103
+97            android:exported="false" >
+97-->[com.google.android.datatransport:transport-backend-cct:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\b5cc604ebd24991a76e00a1ef0b8e216\transformed\transport-backend-cct-3.1.0\AndroidManifest.xml:31:13-37
+98            <meta-data
+98-->[com.google.android.datatransport:transport-backend-cct:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\b5cc604ebd24991a76e00a1ef0b8e216\transformed\transport-backend-cct-3.1.0\AndroidManifest.xml:32:13-34:39
+99                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+99-->[com.google.android.datatransport:transport-backend-cct:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\b5cc604ebd24991a76e00a1ef0b8e216\transformed\transport-backend-cct-3.1.0\AndroidManifest.xml:33:17-94
+100                android:value="cct" />
+100-->[com.google.android.datatransport:transport-backend-cct:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\b5cc604ebd24991a76e00a1ef0b8e216\transformed\transport-backend-cct-3.1.0\AndroidManifest.xml:34:17-36
+101        </service>
+102        <service
+102-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:26:9-30:19
+103            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+103-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:27:13-117
+104            android:exported="false"
+104-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:28:13-37
+105            android:permission="android.permission.BIND_JOB_SERVICE" >
+105-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:29:13-69
+106        </service>
+107
+108        <receiver
+108-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:32:9-34:40
+109            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+109-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:33:13-132
+110            android:exported="false" />
+110-->[com.google.android.datatransport:transport-runtime:3.1.0] C:\Users\sumit\.gradle\caches\transforms-4\873d6aedce1293e196f71b1f2b9f7cb0\transformed\transport-runtime-3.1.0\AndroidManifest.xml:34:13-37
+111    </application>
+112
+113</manifest>

@@ -21,7 +21,7 @@
         android:id="@+id/cardGpsOverlay"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_margin="12dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="6dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -32,7 +32,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="10dp">
 
             <TextView
                 android:id="@+id/tvGpsStatus"
@@ -40,13 +40,13 @@
                 android:layout_height="wrap_content"
                 android:text="Status: Acquiring GPS signal..."
                 android:textColor="#D32F2F"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:orientation="horizontal">
 
                 <TextView
@@ -56,7 +56,7 @@
                     android:layout_weight="1"
                     android:text="Lat: --"
                     android:textColor="@color/black"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
 
                 <TextView
                     android:id="@+id/tvLongitude"
@@ -65,7 +65,7 @@
                     android:layout_weight="1"
                     android:text="Lon: --"
                     android:textColor="@color/black"
-                    android:textSize="13sp" />
+                    android:textSize="12sp" />
 
             </LinearLayout>
 
@@ -73,14 +73,83 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Bottom Phase 5 Position-to-Route Matching Display -->
+    <!-- Middle Nearest Waypoints Stats Card (Phase 5) -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardNearestOverlay"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="16dp"
+        android:layout_marginHorizontal="12dp"
+        android:layout_marginTop="6dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardGpsOverlay">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="10dp">
+
+            <TextView
+                android:id="@+id/tvNearestHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📊 Live Trail &amp; Waypoint Tracking"
+                android:textColor="#1976D2"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvNearestWaypoint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:text="📍 Nearest Waypoint: Calculating..."
+                android:textColor="@color/black"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvNearestWater"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="💧 Nearest Water: Calculating..."
+                android:textColor="#0288D1"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tvNearestShelter"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="🛖 Nearest Shelter: Calculating..."
+                android:textColor="#E65100"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/tvNearestExit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="1dp"
+                android:text="🚪 Nearest Exit: Calculating..."
+                android:textColor="#388E3C"
+                android:textSize="11sp" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Bottom On-Device LLM Chat Assistant Card (Phase 6) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardChatOverlay"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="8dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -92,50 +161,52 @@
             android:padding="12dp">
 
             <TextView
-                android:id="@+id/tvNearestHeader"
+                android:id="@+id/tvChatHeader"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📊 Phase 5: Position-to-Route Matching"
-                android:textColor="#1976D2"
+                android:text="🤖 TrailSense AI Assistant (Offline)"
+                android:textColor="#673AB7"
                 android:textSize="14sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/tvNearestWaypoint"
+                android:id="@+id/tvChatOutput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="📍 Nearest Waypoint: Calculating..."
-                android:textColor="@color/black"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvNearestWater"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="💧 Nearest Water: Calculating..."
-                android:textColor="#0288D1"
+                android:background="#F5F5F5"
+                android:padding="8dp"
+                android:text="Ask me anything about your current trail position, shelters, or water sources!"
+                android:textColor="#333333"
                 android:textSize="12sp" />
 
-            <TextView
-                android:id="@+id/tvNearestShelter"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="🛖 Nearest Shelter: Calculating..."
-                android:textColor="#E65100"
-                android:textSize="12sp" />
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/tvNearestExit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="🚪 Nearest Exit: Calculating..."
-                android:textColor="#388E3C"
-                android:textSize="12sp" />
+                <EditText
+                    android:id="@+id/etChatInput"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="@android:drawable/editbox_background"
+                    android:hint="e.g. How far is the nearest shelter?"
+                    android:inputType="text"
+                    android:paddingHorizontal="10dp"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnSendChat"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="8dp"
+                    android:text="Ask"
+                    android:textAllCaps="false"
+                    android:textSize="13sp" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
@@ -145,11 +216,11 @@
         android:id="@+id/fabLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginBottom="12dp"
         android:contentDescription="Center Location"
         app:srcCompat="@android:drawable/ic_menu_mylocation"
-        app:layout_constraintBottom_toTopOf="@id/cardNearestOverlay"
+        app:layout_constraintBottom_toTopOf="@id/cardChatOverlay"
         app:layout_constraintEnd_toEndOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

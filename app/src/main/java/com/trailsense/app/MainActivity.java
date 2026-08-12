@@ -9,6 +9,8 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -60,6 +62,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private TextView tvNearestShelter;
     private TextView tvNearestExit;
 
+    // Phase 6 On-Device LLM Chat UI Views
+    private TextView tvChatOutput;
+    private EditText etChatInput;
+    private Button btnSendChat;
+    private LlmAssistant llmAssistant;
+
     private LocationManager locationManager;
     private Location lastKnownLocation;
     private ActivityResultLauncher<String[]> locationPermissionRequest;
@@ -89,6 +97,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         tvNearestWater = findViewById(R.id.tvNearestWater);
         tvNearestShelter = findViewById(R.id.tvNearestShelter);
         tvNearestExit = findViewById(R.id.tvNearestExit);
+
+        // Phase 6 UI Views & On-Device LLM Engine
+        tvChatOutput = findViewById(R.id.tvChatOutput);
+        etChatInput = findViewById(R.id.etChatInput);
+        btnSendChat = findViewById(R.id.btnSendChat);
+        llmAssistant = new LlmAssistant(this);
+
+        btnSendChat.setOnClickListener(v -> submitGroundedLlmQuery());
 
         // Map engine rendering & High-DPI text scaling
         mapView.setTileSource(TileSourceFactory.MAPNIK);
@@ -133,6 +149,41 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         setupPermissionLauncher();
         checkAndRequestLocationPermissions();
+    }
+
+    /**
+     * Phase 6: Ground user query with real-time GPS position facts & pass to LLM
+     */
+    private void submitGroundedLlmQuery() {
+        String query = etChatInput.getText().toString().trim();
+        if (query.isEmpty()) {
+            Toast.makeText(this, "Please enter a question.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        tvChatOutput.setText("Thinking... (Generating position-grounded answer)");
+
+        // Construct Position-Grounded Prompt for LLM
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append("System: You are TrailSense AI, an offline mountain trail assistant.\n");
+        promptBuilder.append("Current GPS: ").append(tvLatitude.getText()).append(", ").append(tvLongitude.getText()).append("\n");
+        promptBuilder.append("Nearest Waypoint: ").append(tvNearestWaypoint.getText()).append("\n");
+        promptBuilder.append("Nearest Water Point: ").append(tvNearestWater.getText()).append("\n");
+        promptBuilder.append("Nearest Shelter: ").append(tvNearestShelter.getText()).append("\n");
+        promptBuilder.append("Nearest Emergency Exit: ").append(tvNearestExit.getText()).append("\n");
+        promptBuilder.append("User Question: ").append(query).append("\n");
+
+        llmAssistant.generateResponse(promptBuilder.toString(), new LlmAssistant.ResponseListener() {
+            @Override
+            public void onResponse(String response) {
+                tvChatOutput.setText(response);
+            }
+
+            @Override
+            public void onError(String error) {
+                tvChatOutput.setText(error);
+            }
+        });
     }
 
     private void renderWaypointsAroundLocation(double centerLat, double centerLon) {

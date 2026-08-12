@@ -6,10 +6,15 @@ color purple_700
 color teal_200
 color teal_700
 color white
+id btnSendChat
+id cardChatOverlay
 id cardGpsOverlay
 id cardNearestOverlay
+id etChatInput
 id fabLocation
 id mapView
+id tvChatHeader
+id tvChatOutput
 id tvGpsStatus
 id tvLatitude
 id tvLongitude
