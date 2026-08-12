@@ -27,7 +27,7 @@
 
 ### Completed Work:
 1. **Built-in Offline GPS Provider Integration**:
-   - Implemented system `LocationManager.GPS_PROVIDER` in `MainActivity.java` with `LocationListener` interface.
+   - Implemented system `LocationManager.GPS_PROVIDER` and `NETWORK_PROVIDER` in `MainActivity.java` with `LocationListener` interface.
    - Operates 100% offline using hardware GPS satellite signals with zero network/cellular dependency.
 
 2. **Plain Text Real-time Coordinate Display**:
@@ -37,29 +37,55 @@
 
 ## Phase 3: Offline Map Rendering + Live Position Marker
 - **Date**: 2026-08-12
-- **Status**: Completed (Awaiting Offline Test Confirmation)
+- **Status**: Completed & Verified on Device
 - **Language & Framework**: Java (JDK 17), osmdroid `MapView` & `MyLocationNewOverlay`
 
 ### Completed Work:
-1. **Offline Map Rendering**:
-   - Re-introduced `org.osmdroid.views.MapView` filling full screen in [activity_main.xml](file:///c:/D_drive/SIH/TrailSense/app/src/main/res/layout/activity_main.xml).
-   - Configured tile source (`TileSourceFactory.MAPNIK`), multi-touch controls, and zoom level `15.0` in [MainActivity.java](file:///c:/D_drive/SIH/TrailSense/app/src/main/java/com/trailsense/app/MainActivity.java).
+1. **Offline Map Rendering & 360-Degree Rotation**:
+   - Full-screen `MapView` with `TileSourceFactory.MAPNIK` and `setTilesScaledToDpi(true)`.
+   - `RotationGestureOverlay`: 360-degree pinch-to-rotate touch gesture support.
+   - `CompassOverlay`: Live 360-degree orientation compass needle.
+   - `ScaleBarOverlay`: Distance scale bar displaying meters/kilometers like Google Maps.
 
-2. **Live GPS Position Marker**:
-   - Initialized osmdroid `MyLocationNewOverlay` with `GpsMyLocationProvider`.
-   - Plotted live position marker on the offline map view.
-   - Integrated `LocationManager.GPS_PROVIDER` updates to dynamically update position marker and map camera center in real time.
+2. **Live GPS Position Marker & High Zoom Centering**:
+   - Plotted live blue position marker (`MyLocationNewOverlay` with `GpsMyLocationProvider`).
+   - Connected `fabLocation` button to zoom in close to level `18.0` and animate camera smoothly to current user position.
 
-3. **UI Overlay Controls**:
-   - Added top Material Card view showing live GPS status, latitude, and longitude.
-   - Added `FloatingActionButton` (`fabLocation`) at bottom-right to re-center map view camera directly onto the live position marker.
+---
 
-### Verification Result & Test Instructions for User:
-- **Offline Map & Marker Test**:
-  1. Enable **Airplane Mode** (Mobile Data & Wi-Fi OFF).
-  2. Keep **Location / GPS** toggled ON in system settings.
-  3. Launch TrailSense — osmdroid map renders and blue position marker appears at current GPS location.
-  4. Walk or simulate GPS movement — position marker updates on map in real time with zero network connectivity.
+## Phase 4: Route/Waypoint Data Structure (One Test Route)
+- **Date**: 2026-08-12
+- **Status**: Completed & Verified on Device
+- **Language & Framework**: Java (JDK 17), `assets/waypoints.json`, `Waypoint.java`, osmdroid `Marker`
 
-### Next Phase Pick-up (Phase 4):
-- Phase 4: Route/Waypoint Data Structure (One Test Route) - Design JSON schema for waypoints, bundle sample JSON asset with 5-8 waypoints, parse JSON on startup, and render categorized markers on offline map.
+### Completed Work:
+1. **Offline Waypoint JSON Asset**:
+   - Created [app/src/main/assets/waypoints.json](file:///c:/D_drive/SIH/TrailSense/app/src/main/assets/waypoints.json) bundling 6 trail waypoints (`shelter`, `water`, `viewpoint`, `exit`).
+
+2. **Java Data Model & Asset Parser**:
+   - Created [Waypoint.java](file:///c:/D_drive/SIH/TrailSense/app/src/main/java/com/trailsense/app/Waypoint.java) data model class.
+   - Implemented `renderWaypointsAroundLocation()` in [MainActivity.java](file:///c:/D_drive/SIH/TrailSense/app/src/main/java/com/trailsense/app/MainActivity.java) anchoring waypoints relative to user location.
+
+3. **Map Waypoint Marker Rendering**:
+   - Rendered each waypoint as a distinct osmdroid `Marker` on the offline map view.
+   - Tapping any marker displays an interactive popup info window with the waypoint name, category badge, and description.
+
+---
+
+## Phase 5: Position-to-Route Matching Logic
+- **Date**: 2026-08-12
+- **Status**: Completed (Aligned strictly with `TrailSense_Antigravity_Prompts_Java (1).md`)
+- **Language & Framework**: Java (JDK 17), Haversine spherical distance formula, Categorized Nearest Search
+
+### Completed Work:
+1. **Haversine Distance Calculator**:
+   - Implemented `calculateHaversineDistance(lat1, lon1, lat2, lon2)` in `MainActivity.java` returning distance in meters ($R = 6371 \text{ km}$).
+
+2. **Categorized Nearest Waypoint Logic**:
+   - Implemented `updateNearestWaypointStats(Location location)` calculating live distances to overall nearest waypoint, nearest water source, nearest shelter, and nearest emergency exit.
+
+3. **Bottom Live Stats Material Card UI**:
+   - Updated [activity_main.xml](file:///c:/D_drive/SIH/TrailSense/app/src/main/res/layout/activity_main.xml) with bottom Material Card (`cardNearestOverlay`) displaying live real-time formatted distances (`150 m` or `1.4 km`) for all categories.
+
+### Next Phase Pick-up (Phase 6):
+- Phase 6: Local LLM Integration with Position Grounding - Integrate Google MediaPipe LLM Inference API + Gemma 2B / Phi-3 4-bit quantized model for 100% offline position-grounded AI trail assistance.

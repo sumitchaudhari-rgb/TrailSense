@@ -7,11 +7,17 @@ color teal_200
 color teal_700
 color white
 id cardGpsOverlay
+id cardNearestOverlay
 id fabLocation
 id mapView
 id tvGpsStatus
 id tvLatitude
 id tvLongitude
+id tvNearestExit
+id tvNearestHeader
+id tvNearestShelter
+id tvNearestWater
+id tvNearestWaypoint
 layout activity_main
 mipmap ic_launcher
 mipmap ic_launcher_round

@@ -3204,6 +3204,7 @@ id cache_measures
 id callMeasure
 id cancel_button
 id cardGpsOverlay
+id cardNearestOverlay
 id carryVelocity
 id center
 id centerCrop
@@ -3578,6 +3579,11 @@ id triangle
 id tvGpsStatus
 id tvLatitude
 id tvLongitude
+id tvNearestExit
+id tvNearestHeader
+id tvNearestShelter
+id tvNearestWater
+id tvNearestWaypoint
 id unchecked
 id uniform
 id unlabeled

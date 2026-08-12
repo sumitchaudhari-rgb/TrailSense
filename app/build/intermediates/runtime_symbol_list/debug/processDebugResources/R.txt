@@ -3203,6 +3203,7 @@ int id cache_measures 0x7f080068
 int id callMeasure 0x7f080069
 int id cancel_button 0x7f08006a
 int id cardGpsOverlay 0x7f08006b
+int id cardNearestOverlay 0x7f0801f9
 int id carryVelocity 0x7f08006c
 int id center 0x7f08006d
 int id centerCrop 0x7f08006e
@@ -3577,6 +3578,11 @@ int id triangle 0x7f0801de
 int id tvGpsStatus 0x7f0801df
 int id tvLatitude 0x7f0801e0
 int id tvLongitude 0x7f0801e1
+int id tvNearestExit 0x7f0801fa
+int id tvNearestHeader 0x7f0801fb
+int id tvNearestShelter 0x7f0801fc
+int id tvNearestWater 0x7f0801fd
+int id tvNearestWaypoint 0x7f0801fe
 int id unchecked 0x7f0801e2
 int id uniform 0x7f0801e3
 int id unlabeled 0x7f0801e4

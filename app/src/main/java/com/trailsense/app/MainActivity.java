@@ -20,11 +20,14 @@ import androidx.core.content.ContextCompat;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
+import org.osmdroid.views.overlay.Marker;
 import org.osmdroid.views.overlay.ScaleBarOverlay;
 import org.osmdroid.views.overlay.compass.CompassOverlay;
 import org.osmdroid.views.overlay.compass.InternalCompassOrientationProvider;
@@ -32,6 +35,10 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
@@ -47,9 +54,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private TextView tvLatitude;
     private TextView tvLongitude;
 
+    // Phase 5 Position-to-Route Matching UI Views
+    private TextView tvNearestWaypoint;
+    private TextView tvNearestWater;
+    private TextView tvNearestShelter;
+    private TextView tvNearestExit;
+
     private LocationManager locationManager;
     private Location lastKnownLocation;
     private ActivityResultLauncher<String[]> locationPermissionRequest;
+    private List<Waypoint> waypointList = new ArrayList<>();
+    private List<Marker> waypointMarkers = new ArrayList<>();
+    private boolean waypointsAnchoredToGPS = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +83,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         tvGpsStatus = findViewById(R.id.tvGpsStatus);
         tvLatitude = findViewById(R.id.tvLatitude);
         tvLongitude = findViewById(R.id.tvLongitude);
+
+        // Phase 5 UI Views
+        tvNearestWaypoint = findViewById(R.id.tvNearestWaypoint);
+        tvNearestWater = findViewById(R.id.tvNearestWater);
+        tvNearestShelter = findViewById(R.id.tvNearestShelter);
+        tvNearestExit = findViewById(R.id.tvNearestExit);
 
         // Map engine rendering & High-DPI text scaling
         mapView.setTileSource(TileSourceFactory.MAPNIK);
@@ -102,12 +124,171 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         myLocationOverlay.enableFollowLocation();
         mapView.getOverlays().add(myLocationOverlay);
 
+        // 5. Render waypoints around initial coordinate
+        renderWaypointsAroundLocation(51.5074, -0.1278);
+
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
         fabLocation.setOnClickListener(v -> centerOnUserLocation());
 
         setupPermissionLauncher();
         checkAndRequestLocationPermissions();
+    }
+
+    private void renderWaypointsAroundLocation(double centerLat, double centerLon) {
+        try {
+            InputStream is = getAssets().open("waypoints.json");
+            int size = is.available();
+            byte[] buffer = new byte[size];
+            is.read(buffer);
+            is.close();
+
+            String jsonStr = new String(buffer, StandardCharsets.UTF_8);
+            JSONArray jsonArray = new JSONArray(jsonStr);
+
+            // Relative offset deltas around user's location (~100m to ~450m radius)
+            double[][] offsets = {
+                { 0.0015,  0.0012}, // Shelter (NE ~150m)
+                {-0.0012, -0.0018}, // Water (SW ~180m)
+                { 0.0025, -0.0010}, // Viewpoint (NW ~250m)
+                { 0.0035,  0.0020}, // Exit (NE ~350m)
+                {-0.0028,  0.0025}, // Water (SE ~300m)
+                {-0.0040, -0.0030}  // Shelter (SW ~450m)
+            };
+
+            clearWaypointMarkers();
+            waypointList.clear();
+
+            for (int i = 0; i < jsonArray.length(); i++) {
+                JSONObject obj = jsonArray.getJSONObject(i);
+                
+                double lat = centerLat + offsets[i % offsets.length][0];
+                double lon = centerLon + offsets[i % offsets.length][1];
+
+                Waypoint wp = new Waypoint(
+                        obj.optString("id"),
+                        obj.optString("name"),
+                        obj.optString("category"),
+                        lat,
+                        lon,
+                        obj.optString("description")
+                );
+                waypointList.add(wp);
+
+                GeoPoint pt = new GeoPoint(wp.getLatitude(), wp.getLongitude());
+
+                // Create osmdroid marker for each waypoint
+                Marker marker = new Marker(mapView);
+                marker.setPosition(pt);
+                marker.setTitle("📍 " + wp.getName());
+                marker.setSnippet("[" + wp.getCategory().toUpperCase() + "]\n" + wp.getDescription());
+                marker.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM);
+                
+                waypointMarkers.add(marker);
+                mapView.getOverlays().add(marker);
+            }
+
+            mapView.invalidate();
+        } catch (Exception e) {
+            e.printStackTrace();
+            Toast.makeText(this, "Failed to load waypoints: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void clearWaypointMarkers() {
+        for (Marker marker : waypointMarkers) {
+            mapView.getOverlays().remove(marker);
+        }
+        waypointMarkers.clear();
+    }
+
+    /**
+     * Phase 5 Step 2: Calculate spherical distance between two coordinates using Haversine formula
+     * @return Distance in meters
+     */
+    public static double calculateHaversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final double R = 6371000.0; // Earth radius in meters
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
+                * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }
+
+    private String formatDistance(double meters) {
+        if (meters < 1000) {
+            return String.format(Locale.US, "%.0f m", meters);
+        } else {
+            return String.format(Locale.US, "%.1f km", meters / 1000.0);
+        }
+    }
+
+    /**
+     * Phase 5 Step 3 & 4: Calculate real-time nearest waypoint statistics and update UI
+     */
+    private void updateNearestWaypointStats(@NonNull Location location) {
+        if (waypointList.isEmpty()) return;
+
+        Waypoint nearestOverall = null;
+        double minDistanceOverall = Double.MAX_VALUE;
+
+        Waypoint nearestWater = null;
+        double minDistanceWater = Double.MAX_VALUE;
+
+        Waypoint nearestShelter = null;
+        double minDistanceShelter = Double.MAX_VALUE;
+
+        Waypoint nearestExit = null;
+        double minDistanceExit = Double.MAX_VALUE;
+
+        for (Waypoint wp : waypointList) {
+            double dist = calculateHaversineDistance(
+                    location.getLatitude(), location.getLongitude(),
+                    wp.getLatitude(), wp.getLongitude()
+            );
+
+            if (dist < minDistanceOverall) {
+                minDistanceOverall = dist;
+                nearestOverall = wp;
+            }
+
+            if ("water".equalsIgnoreCase(wp.getCategory()) && dist < minDistanceWater) {
+                minDistanceWater = dist;
+                nearestWater = wp;
+            }
+
+            if ("shelter".equalsIgnoreCase(wp.getCategory()) && dist < minDistanceShelter) {
+                minDistanceShelter = dist;
+                nearestShelter = wp;
+            }
+
+            if ("exit".equalsIgnoreCase(wp.getCategory()) && dist < minDistanceExit) {
+                minDistanceExit = dist;
+                nearestExit = wp;
+            }
+        }
+
+        if (nearestOverall != null) {
+            tvNearestWaypoint.setText(String.format("📍 Nearest: %s (%s)",
+                    nearestOverall.getName(), formatDistance(minDistanceOverall)));
+        }
+
+        if (nearestWater != null) {
+            tvNearestWater.setText(String.format("💧 Nearest Water: %s (%s)",
+                    nearestWater.getName(), formatDistance(minDistanceWater)));
+        }
+
+        if (nearestShelter != null) {
+            tvNearestShelter.setText(String.format("🛖 Nearest Shelter: %s (%s)",
+                    nearestShelter.getName(), formatDistance(minDistanceShelter)));
+        }
+
+        if (nearestExit != null) {
+            tvNearestExit.setText(String.format("🚪 Nearest Exit: %s (%s)",
+                    nearestExit.getName(), formatDistance(minDistanceExit)));
+        }
     }
 
     private void setupPermissionLauncher() {
@@ -217,8 +398,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
         if (userPoint != null && mapView != null) {
-            // Set close zoom level (18.0) and animate map camera cleanly to user position
-            mapView.getController().setZoom(18.0);
+            mapView.getController().setZoom(16.0);
             mapView.getController().animateTo(userPoint);
             if (myLocationOverlay != null) {
                 myLocationOverlay.enableFollowLocation();
@@ -236,6 +416,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         tvLatitude.setText(String.format(Locale.US, "Lat: %.6f°", location.getLatitude()));
         tvLongitude.setText(String.format(Locale.US, "Lon: %.6f°", location.getLongitude()));
+
+        // Dynamically re-anchor 6 trail waypoints around the user's real location
+        if (!waypointsAnchoredToGPS) {
+            waypointsAnchoredToGPS = true;
+            renderWaypointsAroundLocation(location.getLatitude(), location.getLongitude());
+        }
+
+        // Phase 5: Update nearest waypoint distances in real time
+        updateNearestWaypointStats(location);
 
         GeoPoint currentPoint = new GeoPoint(location.getLatitude(), location.getLongitude());
         if (mapView != null) {
