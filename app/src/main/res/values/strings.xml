@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">TrailSense</string>
+    <string name="location_permission_needed">Location permission is required to center the map on your location.</string>
+</resources>

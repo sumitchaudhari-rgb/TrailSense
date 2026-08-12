@@ -1,0 +1,20 @@
+R_DEF: Internal format may change without notice
+local
+color black
+color purple_500
+color purple_700
+color teal_200
+color teal_700
+color white
+id cardGpsOverlay
+id fabLocation
+id mapView
+id tvGpsStatus
+id tvLatitude
+id tvLongitude
+layout activity_main
+mipmap ic_launcher
+mipmap ic_launcher_round
+string app_name
+string location_permission_needed
+style Theme.TrailSense
