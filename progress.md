@@ -117,4 +117,31 @@
 - **Core Proof-of-Concept Milestone**: Reached and validated cleanly!
 
 ### Next Phase Pick-up (Phase 8):
-- Phase 8: Voice Input/Output - Integrate Android built-in `SpeechRecognizer` for offline voice-to-text input and `TextToSpeech` for reading LLM responses aloud hands-free.
+- Phase 8: Voice Input/Output - Integrated Android built-in `SpeechRecognizer` for offline voice-to-text input and `TextToSpeech` for reading LLM responses aloud hands-free.
+
+---
+
+## Phase 8: Voice Input/Output
+- **Date**: 2026-08-13
+- **Status**: Completed
+- **Language & Framework**: Java (JDK 17), Android `SpeechRecognizer`, `TextToSpeech`, `RECORD_AUDIO` permission
+
+### Completed Work:
+1. **Manifest & Permissions**:
+   - Declared `RECORD_AUDIO` permission in [AndroidManifest.xml](file:///c:/D_drive/SIH/TrailSense/app/src/main/AndroidManifest.xml).
+   - Added runtime permission request launcher `audioPermissionRequest` in [MainActivity.java](file:///c:/D_drive/SIH/TrailSense/app/src/main/java/com/trailsense/app/MainActivity.java).
+
+2. **Microphone Voice UI**:
+   - Added microphone button `btnMicChat` (`🎙️`) to the bottom AI chat overlay in [activity_main.xml](file:///c:/D_drive/SIH/TrailSense/app/src/main/res/layout/activity_main.xml) styled in purple glass theme.
+
+3. **Offline Speech Recognition (STT)**:
+   - Configured `SpeechRecognizer` with `RecognizerIntent.EXTRA_PREFER_OFFLINE = true` to prioritize on-device offline language packs.
+   - Speech recognition results directly populate `etChatInput` and invoke `submitGroundedLlmQuery()`, ensuring hands-free Q&A feeds into the exact same position-grounded LLM pipeline without duplicate code paths.
+
+4. **Text-To-Speech Output (TTS)**:
+   - Initialized Android `TextToSpeech` engine (`Locale.US`).
+   - Connected `speakLlmResponse()` to automatically read on-device AI responses aloud when inference completes.
+   - Integrated lifecycle teardown (`speechRecognizer.destroy()` and `textToSpeech.shutdown()`) in `onDestroy()`.
+
+### Next Phase Pick-up (Phase 9):
+- Phase 9: Nearest Safe-Point Finder & Polish - Build a dedicated quick-access safe point panel for nearest shelter, water, and exit, and apply outdoor UI readability polish.

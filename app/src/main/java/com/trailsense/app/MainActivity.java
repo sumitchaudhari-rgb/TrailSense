@@ -41,6 +41,12 @@ import org.osmdroid.views.overlay.gestures.RotationGestureOverlay;
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
+import android.content.Intent;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
+
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -77,6 +83,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private Chip chipWater;
     private Chip chipExit;
     private LlmAssistant llmAssistant;
+
+    // Phase 8 Voice Input/Output (SpeechRecognizer & TextToSpeech)
+    private MaterialButton btnMicChat;
+    private SpeechRecognizer speechRecognizer;
+    private TextToSpeech textToSpeech;
+    private ActivityResultLauncher<String> audioPermissionRequest;
 
     private LocationManager locationManager;
     private Location lastKnownLocation;
@@ -125,7 +137,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         
         llmAssistant = new LlmAssistant(this);
 
+        // Phase 8 Voice Input/Output UI Views & Listeners
+        btnMicChat = findViewById(R.id.btnMicChat);
+        btnMicChat.setOnClickListener(v -> checkAudioPermissionAndListen());
+
         btnSendChat.setOnClickListener(v -> submitGroundedLlmQuery());
+
+        setupAudioPermissionLauncher();
+        initTextToSpeech();
 
         // Quick Suggestion Chips Click Handlers with Auto-Routing
         chipShelter.setOnClickListener(v -> {
@@ -282,11 +301,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             @Override
             public void onResponse(String response) {
                 tvChatOutput.setText(response);
+                speakLlmResponse(response);
             }
 
             @Override
             public void onError(String error) {
                 tvChatOutput.setText(error);
+                speakLlmResponse(error);
             }
         });
     }
@@ -654,6 +675,132 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         if (locationManager != null) {
             locationManager.removeUpdates(this);
+        }
+    }
+
+    // ==========================================
+    // Phase 8: Voice Input & Output Methods
+    // ==========================================
+
+    private void initTextToSpeech() {
+        textToSpeech = new TextToSpeech(this, status -> {
+            if (status == TextToSpeech.SUCCESS) {
+                textToSpeech.setLanguage(Locale.US);
+            }
+        });
+    }
+
+    private void speakLlmResponse(String text) {
+        if (textToSpeech != null && text != null && !text.isEmpty()) {
+            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TrailSenseTTS");
+        }
+    }
+
+    private void setupAudioPermissionLauncher() {
+        audioPermissionRequest = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                isGranted -> {
+                    if (isGranted) {
+                        startVoiceRecognition();
+                    } else {
+                        Toast.makeText(this, "Microphone permission required for voice Q&A.", Toast.LENGTH_SHORT).show();
+                    }
+                }
+        );
+    }
+
+    private void initSpeechRecognizer() {
+        if (SpeechRecognizer.isRecognitionAvailable(this)) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+            speechRecognizer.setRecognitionListener(new RecognitionListener() {
+                @Override
+                public void onReadyForSpeech(Bundle params) {
+                    tvChatOutput.setText("🎙️ Listening... Speak your trail question clearly.");
+                    btnMicChat.setText("🔴");
+                }
+
+                @Override
+                public void onBeginningOfSpeech() {}
+
+                @Override
+                public void onRmsChanged(float rmsdB) {}
+
+                @Override
+                public void onBufferReceived(byte[] buffer) {}
+
+                @Override
+                public void onEndOfSpeech() {
+                    btnMicChat.setText("🎙️");
+                }
+
+                @Override
+                public void onError(int error) {
+                    btnMicChat.setText("🎙️");
+                    tvChatOutput.setText("Voice recognition error or timeout. Tap mic to try again.");
+                }
+
+                @Override
+                public void onResults(Bundle results) {
+                    btnMicChat.setText("🎙️");
+                    if (results != null) {
+                        ArrayList<String> matches = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                        if (matches != null && !matches.isEmpty()) {
+                            String recognizedText = matches.get(0);
+                            etChatInput.setText(recognizedText);
+                            Toast.makeText(MainActivity.this, "Voice: \"" + recognizedText + "\"", Toast.LENGTH_SHORT).show();
+                            submitGroundedLlmQuery(); // Feeds voice directly into position-grounded LLM pipeline
+                        }
+                    }
+                }
+
+                @Override
+                public void onPartialResults(Bundle partialResults) {}
+
+                @Override
+                public void onEvent(int eventType, Bundle params) {}
+            });
+        }
+    }
+
+    private void checkAudioPermissionAndListen() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED) {
+            startVoiceRecognition();
+        } else {
+            audioPermissionRequest.launch(Manifest.permission.RECORD_AUDIO);
+        }
+    }
+
+    private void startVoiceRecognition() {
+        if (speechRecognizer == null) {
+            initSpeechRecognizer();
+        }
+
+        if (speechRecognizer != null) {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+            intent.putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true); // Prefer offline speech recognition
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Ask TrailSense AI...");
+            try {
+                speechRecognizer.startListening(intent);
+            } catch (Exception e) {
+                Toast.makeText(this, "Voice recognition error: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(this, "Speech recognition unavailable on this device.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (speechRecognizer != null) {
+            speechRecognizer.destroy();
+        }
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
         }
     }
 }
