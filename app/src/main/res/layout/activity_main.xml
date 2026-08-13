@@ -140,13 +140,26 @@
                     android:textStyle="bold" />
 
                 <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSafePointsQuick"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="0dp"
+                    android:text="🚨 Safe Points"
+                    android:textColor="#81C784"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnCreateRoute"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="wrap_content"
                     android:layout_height="32dp"
-                    android:paddingHorizontal="8dp"
+                    android:layout_marginStart="2dp"
+                    android:paddingHorizontal="6dp"
                     android:paddingVertical="0dp"
-                    android:text="🛣️ Create Route"
+                    android:text="🛣️ Route"
                     android:textColor="#64B5F6"
                     android:textSize="11sp"
                     android:textStyle="bold" />
@@ -208,6 +221,214 @@
                     android:text="🚪 Exit: --"
                     android:textColor="#81C784"
                     android:textSize="11sp" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Phase 9 Dedicated Safe-Point Finder Modal Panel -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardSafePointsModal"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="14dp"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="#F7152018"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="16dp"
+        app:strokeColor="#6681C784"
+        app:strokeWidth="1.5dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardNearestOverlay">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <!-- Title & Close Bar -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🚨 Nearest Safe Points"
+                    android:textColor="#81C784"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCloseSafePoints"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:padding="0dp"
+                    android:text="✖"
+                    android:textColor="#B0BEC5"
+                    android:textSize="14sp" />
+
+            </LinearLayout>
+
+            <!-- Safe Point Item 1: Shelter -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:background="#22FFB74D"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvModalShelterTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🛖 Shelter: --"
+                        android:textColor="#FFB74D"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvModalShelterDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Emergency trail shelter"
+                        android:textColor="#E0E0E0"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRouteShelter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="8dp"
+                    android:text="Route 🗺️"
+                    android:textColor="#121212"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#FFB74D"
+                    app:cornerRadius="8dp" />
+
+            </LinearLayout>
+
+            <!-- Safe Point Item 2: Water -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="#224FC3F7"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvModalWaterTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="💧 Water: --"
+                        android:textColor="#4FC3F7"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvModalWaterDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Potable drinking water point"
+                        android:textColor="#E0E0E0"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRouteWater"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="8dp"
+                    android:text="Route 🗺️"
+                    android:textColor="#121212"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#4FC3F7"
+                    app:cornerRadius="8dp" />
+
+            </LinearLayout>
+
+            <!-- Safe Point Item 3: Exit -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:background="#2281C784"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvModalExitTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🚪 Exit: --"
+                        android:textColor="#81C784"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvModalExitDesc"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Trailhead emergency exit point"
+                        android:textColor="#E0E0E0"
+                        android:textSize="10sp" />
+
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRouteExit"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:layout_marginStart="6dp"
+                    android:paddingHorizontal="8dp"
+                    android:text="Route 🗺️"
+                    android:textColor="#121212"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    app:backgroundTint="#81C784"
+                    app:cornerRadius="8dp" />
 
             </LinearLayout>
 

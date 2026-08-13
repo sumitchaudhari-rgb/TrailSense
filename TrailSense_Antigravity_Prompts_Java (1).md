@@ -139,6 +139,28 @@ Test instructions for me: I will test from several different positions along the
 
 Update progress.md with results and what Phase 10 should pick up. Report the result to me.
 
+## Phase # : Modernize UI with Kotlin + Jetpack Compose (Hybrid Approach)
+
+
+Modernize TrailSense's UI using Kotlin and Jetpack Compose, while keeping all existing Java logic (GPS, waypoint matching, MediaPipe LLM integration) completely unchanged.
+
+Steps to complete:
+
+Read progress.md to see what was completed in previous phases.
+Add Kotlin support to the existing Java project (Android Studio supports mixed Java/Kotlin in one project natively) — do not rewrite or move any existing Java classes (LocationManager wrapper, WaypointMatcher, MediaPipe integration code, etc.). They stay exactly as-is.
+Add Jetpack Compose dependencies and enable Compose in the build config.
+Rebuild the following screens as Kotlin Compose UI, each calling into the existing Java logic classes directly (no duplication of business logic):
+Map screen: offline map view with live position marker, waypoint markers, and a FAB for "center on me" / "nearest shelter." Animate marker position changes smoothly (interpolate) instead of snapping.
+Chat screen (from Phase 6): chat-bubble layout distinguishing user vs. assistant messages, a typing/thinking indicator while the on-device LLM is generating, and streaming token-by-token text display if MediaPipe's async generation API supports it.
+Nearest-safe-point panel (from Phase 9): card-based layout with a distinct icon per waypoint category, using Material 3 components.
+Apply Material 3 theming (Theme.Material3) across the app, including dynamic color support on Android 12+, updated typography, and consistent rounded shapes/elevation on cards and buttons.
+Add basic outdoor-usability polish: high-contrast option, larger touch targets, and a genuinely dark dark-mode (not just inverted colors).
+Confirm no regression: all existing functionality (GPS accuracy, offline map rendering, waypoint distance calculation, LLM position-grounding) must behave identically to before — this phase changes presentation only, not logic.
+
+Test instructions for me: I will visually review each rebuilt screen for modern look/feel and interactivity, and re-run the Phase 7 offline verification test to confirm nothing broke functionally during the UI rebuild.
+
+Update progress.md with what was completed, the verification result, any issues and resolutions, and what the next phase should pick up. Stop after all three screens are rebuilt in Compose and offline verification still passes. Report the result to me.
+
 ## Phase 10: Opportunistic Sync (Build Last, Lowest Priority)
 
 Implement optional background sync for route updates and alerts, without ever affecting core offline functionality.

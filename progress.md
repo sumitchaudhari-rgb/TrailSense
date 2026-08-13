@@ -144,4 +144,29 @@
    - Integrated lifecycle teardown (`speechRecognizer.destroy()` and `textToSpeech.shutdown()`) in `onDestroy()`.
 
 ### Next Phase Pick-up (Phase 9):
-- Phase 9: Nearest Safe-Point Finder & Polish - Build a dedicated quick-access safe point panel for nearest shelter, water, and exit, and apply outdoor UI readability polish.
+- Phase 9: Nearest Safe-Point Finder & Polish - Built a dedicated quick-access safe point panel for nearest shelter, water, and exit, and applied outdoor UI readability polish.
+
+---
+
+## Phase 9: Nearest Safe-Point Finder & Polish
+- **Date**: 2026-08-13
+- **Status**: Completed
+- **Language & Framework**: Java (JDK 17), MaterialCardView, Categorized Waypoint Routing, High-Contrast UI
+
+### Completed Work:
+1. **Dedicated Quick-Access Safe-Point Panel**:
+   - Added `btnSafePointsQuick` (`🚨 Safe Points`) button to the live trail tracking card header in [activity_main.xml](file:///c:/D_drive/SIH/TrailSense/app/src/main/res/layout/activity_main.xml).
+   - Created `cardSafePointsModal` Material Card overlay featuring high-contrast safe-point cards for:
+     - 🛖 **Nearest Shelter**: Title, real-time distance, category description, and 1-tap `Route 🗺️` button (`btnRouteShelter`).
+     - 💧 **Nearest Water Source**: Title, real-time distance, category description, and 1-tap `Route 🗺️` button (`btnRouteWater`).
+     - 🚪 **Nearest Emergency Exit**: Title, real-time distance, category description, and 1-tap `Route 🗺️` button (`btnRouteExit`).
+
+2. **Reused Phase 5 Distance & Routing Logic**:
+   - Integrated `toggleSafePointsModal()` in [MainActivity.java](file:///c:/D_drive/SIH/TrailSense/app/src/main/java/com/trailsense/app/MainActivity.java) syncing stats directly from Phase 5's `updateNearestWaypointStats()` with zero duplicated math logic.
+   - Tapping `Route 🗺️` on any safe point automatically selects that target waypoint and renders a navigation polyline on the map.
+
+3. **Outdoor UI Readability Polish**:
+   - Standardized high-contrast text styling, readable outdoor font sizes, and category color branding (`#FFB74D` shelter, `#4FC3F7` water, `#81C784` exit).
+
+### Next Phase Pick-up (Phase 10):
+- Phase 10: Opportunistic Sync - Implement optional background sync for route updates and alerts without ever affecting core offline functionality.

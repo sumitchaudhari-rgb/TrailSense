@@ -90,6 +90,20 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private TextToSpeech textToSpeech;
     private ActivityResultLauncher<String> audioPermissionRequest;
 
+    // Phase 9 Dedicated Safe-Point Finder Modal UI Views & Buttons
+    private MaterialButton btnSafePointsQuick;
+    private View cardSafePointsModal;
+    private MaterialButton btnCloseSafePoints;
+    private TextView tvModalShelterTitle;
+    private TextView tvModalShelterDesc;
+    private MaterialButton btnRouteShelter;
+    private TextView tvModalWaterTitle;
+    private TextView tvModalWaterDesc;
+    private MaterialButton btnRouteWater;
+    private TextView tvModalExitTitle;
+    private TextView tvModalExitDesc;
+    private MaterialButton btnRouteExit;
+
     private LocationManager locationManager;
     private Location lastKnownLocation;
     private ActivityResultLauncher<String[]> locationPermissionRequest;
@@ -145,6 +159,55 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         setupAudioPermissionLauncher();
         initTextToSpeech();
+
+        // Phase 9 Dedicated Safe-Point Finder UI Views & Handlers
+        btnSafePointsQuick = findViewById(R.id.btnSafePointsQuick);
+        cardSafePointsModal = findViewById(R.id.cardSafePointsModal);
+        btnCloseSafePoints = findViewById(R.id.btnCloseSafePoints);
+        tvModalShelterTitle = findViewById(R.id.tvModalShelterTitle);
+        tvModalShelterDesc = findViewById(R.id.tvModalShelterDesc);
+        btnRouteShelter = findViewById(R.id.btnRouteShelter);
+        tvModalWaterTitle = findViewById(R.id.tvModalWaterTitle);
+        tvModalWaterDesc = findViewById(R.id.tvModalWaterDesc);
+        btnRouteWater = findViewById(R.id.btnRouteWater);
+        tvModalExitTitle = findViewById(R.id.tvModalExitTitle);
+        tvModalExitDesc = findViewById(R.id.tvModalExitDesc);
+        btnRouteExit = findViewById(R.id.btnRouteExit);
+
+        btnSafePointsQuick.setOnClickListener(v -> toggleSafePointsModal());
+        if (btnCloseSafePoints != null) {
+            btnCloseSafePoints.setOnClickListener(v -> cardSafePointsModal.setVisibility(View.GONE));
+        }
+
+        btnRouteShelter.setOnClickListener(v -> {
+            if (nearestShelterWaypoint != null) {
+                selectedTargetWaypoint = nearestShelterWaypoint;
+                createRouteToTarget();
+                cardSafePointsModal.setVisibility(View.GONE);
+            } else {
+                Toast.makeText(this, "No shelter waypoint available.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btnRouteWater.setOnClickListener(v -> {
+            if (nearestWaterWaypoint != null) {
+                selectedTargetWaypoint = nearestWaterWaypoint;
+                createRouteToTarget();
+                cardSafePointsModal.setVisibility(View.GONE);
+            } else {
+                Toast.makeText(this, "No water waypoint available.", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btnRouteExit.setOnClickListener(v -> {
+            if (nearestExitWaypoint != null) {
+                selectedTargetWaypoint = nearestExitWaypoint;
+                createRouteToTarget();
+                cardSafePointsModal.setVisibility(View.GONE);
+            } else {
+                Toast.makeText(this, "No emergency exit waypoint available.", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         // Quick Suggestion Chips Click Handlers with Auto-Routing
         chipShelter.setOnClickListener(v -> {
@@ -204,7 +267,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         scaleBarOverlay.setScaleBarOffset(20, 60);
         mapView.getOverlays().add(scaleBarOverlay);
 
-        // 4. Initialize location marker overlay
+        // 4. Initialize location manager & marker overlay
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
         GpsMyLocationProvider provider = new GpsMyLocationProvider(this);
         provider.addLocationSource(LocationManager.NETWORK_PROVIDER);
         myLocationOverlay = new MyLocationNewOverlay(provider, mapView);
@@ -212,10 +277,27 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         myLocationOverlay.enableFollowLocation();
         mapView.getOverlays().add(myLocationOverlay);
 
-        // 5. Render waypoints around initial coordinate
-        renderWaypointsAroundLocation(51.5074, -0.1278);
+        // Try getting last known location at startup
+        double startLat = 51.5074;
+        double startLon = -0.1278;
+        try {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                Location lastLoc = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (lastLoc == null) lastLoc = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (lastLoc == null) lastLoc = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+                if (lastLoc != null) {
+                    lastKnownLocation = lastLoc;
+                    startLat = lastLoc.getLatitude();
+                    startLon = lastLoc.getLongitude();
+                }
+            }
+        } catch (Exception ignored) {}
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        mapController.setCenter(new GeoPoint(startLat, startLon));
+
+        // 5. Render waypoints around initial coordinate & compute stats immediately
+        renderWaypointsAroundLocation(startLat, startLon);
 
         fabLocation.setOnClickListener(v -> centerOnUserLocation());
 
@@ -374,6 +456,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
 
             mapView.invalidate();
+
+            // Immediately compute nearest waypoint statistics for the initial coordinates
+            Location initialLoc = new Location("InitialProvider");
+            initialLoc.setLatitude(centerLat);
+            initialLoc.setLongitude(centerLon);
+            if (lastKnownLocation == null) {
+                lastKnownLocation = initialLoc;
+                tvLatitude.setText(String.format(Locale.US, "Lat: %.6f°", centerLat));
+                tvLongitude.setText(String.format(Locale.US, "Lon: %.6f°", centerLon));
+            }
+            updateNearestWaypointStats(initialLoc);
         } catch (Exception e) {
             e.printStackTrace();
             Toast.makeText(this, "Failed to load waypoints: " + e.getMessage(), Toast.LENGTH_LONG).show();
@@ -468,16 +561,37 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         if (nearestWater != null) {
             tvNearestWater.setText(String.format("💧 Water: %s (%s)",
                     nearestWater.getName(), formatDistance(minDistanceWater)));
+            if (tvModalWaterTitle != null) {
+                tvModalWaterTitle.setText(String.format("💧 Water: %s (%s)",
+                        nearestWater.getName(), formatDistance(minDistanceWater)));
+                if (nearestWater.getDescription() != null) {
+                    tvModalWaterDesc.setText(nearestWater.getDescription());
+                }
+            }
         }
 
         if (nearestShelter != null) {
             tvNearestShelter.setText(String.format("🛖 Shelter: %s (%s)",
                     nearestShelter.getName(), formatDistance(minDistanceShelter)));
+            if (tvModalShelterTitle != null) {
+                tvModalShelterTitle.setText(String.format("🛖 Shelter: %s (%s)",
+                        nearestShelter.getName(), formatDistance(minDistanceShelter)));
+                if (nearestShelter.getDescription() != null) {
+                    tvModalShelterDesc.setText(nearestShelter.getDescription());
+                }
+            }
         }
 
         if (nearestExit != null) {
             tvNearestExit.setText(String.format("🚪 Exit: %s (%s)",
                     nearestExit.getName(), formatDistance(minDistanceExit)));
+            if (tvModalExitTitle != null) {
+                tvModalExitTitle.setText(String.format("🚪 Exit: %s (%s)",
+                        nearestExit.getName(), formatDistance(minDistanceExit)));
+                if (nearestExit.getDescription() != null) {
+                    tvModalExitDesc.setText(nearestExit.getDescription());
+                }
+            }
         }
 
         if (selectedTargetWaypoint != null && navigationPolyline != null) {
@@ -789,6 +903,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
         } else {
             Toast.makeText(this, "Speech recognition unavailable on this device.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void toggleSafePointsModal() {
+        if (cardSafePointsModal == null) return;
+        if (cardSafePointsModal.getVisibility() == View.VISIBLE) {
+            cardSafePointsModal.setVisibility(View.GONE);
+        } else {
+            cardSafePointsModal.setVisibility(View.VISIBLE);
+            if (lastKnownLocation != null) {
+                updateNearestWaypointStats(lastKnownLocation);
+            }
         }
     }
 
