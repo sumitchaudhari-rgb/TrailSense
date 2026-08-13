@@ -103,6 +103,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private TextView tvModalExitTitle;
     private TextView tvModalExitDesc;
     private MaterialButton btnRouteExit;
+    // Phase 10 Jetpack Compose UI — two ComposeViews in vertical scroll layout
+    private androidx.compose.ui.platform.ComposeView composeHeaderCards;
+    private androidx.compose.ui.platform.ComposeView composeChatSheet;
+    private MainActivityComposeBridge composeBridge;
 
     private LocationManager locationManager;
     private Location lastKnownLocation;
@@ -153,9 +157,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         // Phase 8 Voice Input/Output UI Views & Listeners
         btnMicChat = findViewById(R.id.btnMicChat);
-        btnMicChat.setOnClickListener(v -> checkAudioPermissionAndListen());
+        if (btnMicChat != null) {
+            btnMicChat.setOnClickListener(v -> checkAudioPermissionAndListen());
+        }
 
-        btnSendChat.setOnClickListener(v -> submitGroundedLlmQuery());
+        if (btnSendChat != null) {
+            btnSendChat.setOnClickListener(v -> submitGroundedLlmQuery());
+        }
+
+        if (fabLocation != null) {
+            fabLocation.setOnClickListener(v -> centerOnUserLocation());
+        }
 
         setupAudioPermissionLauncher();
         initTextToSpeech();
@@ -174,72 +186,88 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         tvModalExitDesc = findViewById(R.id.tvModalExitDesc);
         btnRouteExit = findViewById(R.id.btnRouteExit);
 
-        btnSafePointsQuick.setOnClickListener(v -> toggleSafePointsModal());
+        if (btnSafePointsQuick != null) {
+            btnSafePointsQuick.setOnClickListener(v -> toggleSafePointsModal());
+        }
         if (btnCloseSafePoints != null) {
-            btnCloseSafePoints.setOnClickListener(v -> cardSafePointsModal.setVisibility(View.GONE));
+            btnCloseSafePoints.setOnClickListener(v -> {
+                if (cardSafePointsModal != null) cardSafePointsModal.setVisibility(View.GONE);
+            });
         }
 
-        btnRouteShelter.setOnClickListener(v -> {
-            if (nearestShelterWaypoint != null) {
-                selectedTargetWaypoint = nearestShelterWaypoint;
-                createRouteToTarget();
-                cardSafePointsModal.setVisibility(View.GONE);
-            } else {
-                Toast.makeText(this, "No shelter waypoint available.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        if (btnRouteShelter != null) {
+            btnRouteShelter.setOnClickListener(v -> {
+                if (nearestShelterWaypoint != null) {
+                    selectedTargetWaypoint = nearestShelterWaypoint;
+                    createRouteToTarget();
+                    if (cardSafePointsModal != null) cardSafePointsModal.setVisibility(View.GONE);
+                } else {
+                    Toast.makeText(this, "No shelter waypoint available.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
 
-        btnRouteWater.setOnClickListener(v -> {
-            if (nearestWaterWaypoint != null) {
-                selectedTargetWaypoint = nearestWaterWaypoint;
-                createRouteToTarget();
-                cardSafePointsModal.setVisibility(View.GONE);
-            } else {
-                Toast.makeText(this, "No water waypoint available.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        if (btnRouteWater != null) {
+            btnRouteWater.setOnClickListener(v -> {
+                if (nearestWaterWaypoint != null) {
+                    selectedTargetWaypoint = nearestWaterWaypoint;
+                    createRouteToTarget();
+                    if (cardSafePointsModal != null) cardSafePointsModal.setVisibility(View.GONE);
+                } else {
+                    Toast.makeText(this, "No water waypoint available.", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
 
-        btnRouteExit.setOnClickListener(v -> {
-            if (nearestExitWaypoint != null) {
-                selectedTargetWaypoint = nearestExitWaypoint;
-                createRouteToTarget();
-                cardSafePointsModal.setVisibility(View.GONE);
-            } else {
-                Toast.makeText(this, "No emergency exit waypoint available.", Toast.LENGTH_SHORT).show();
-            }
-        });
+        composeHeaderCards = findViewById(R.id.composeHeaderCards);
+        composeChatSheet   = findViewById(R.id.composeChatSheet);
+        if (composeHeaderCards != null && composeChatSheet != null) {
+            composeBridge = new MainActivityComposeBridge(this, composeHeaderCards, composeChatSheet);
+            composeBridge.initComposeUI(mapView);
+            // No touch listener needed — LinearLayout root has no scroll to conflict with
+        }
 
         // Quick Suggestion Chips Click Handlers with Auto-Routing
-        chipShelter.setOnClickListener(v -> {
-            etChatInput.setText("How far is the nearest shelter?");
-            if (nearestShelterWaypoint != null) {
-                selectedTargetWaypoint = nearestShelterWaypoint;
-                createRouteToTarget();
-            }
-            submitGroundedLlmQuery();
-        });
+        if (chipShelter != null) {
+            chipShelter.setOnClickListener(v -> {
+                if (etChatInput != null) etChatInput.setText("How far is the nearest shelter?");
+                if (nearestShelterWaypoint != null) {
+                    selectedTargetWaypoint = nearestShelterWaypoint;
+                    createRouteToTarget();
+                }
+                submitGroundedLlmQuery();
+            });
+        }
 
-        chipWater.setOnClickListener(v -> {
-            etChatInput.setText("Where can I find drinking water?");
-            if (nearestWaterWaypoint != null) {
-                selectedTargetWaypoint = nearestWaterWaypoint;
-                createRouteToTarget();
-            }
-            submitGroundedLlmQuery();
-        });
+        if (chipWater != null) {
+            chipWater.setOnClickListener(v -> {
+                if (etChatInput != null) etChatInput.setText("Where can I find drinking water?");
+                if (nearestWaterWaypoint != null) {
+                    selectedTargetWaypoint = nearestWaterWaypoint;
+                    createRouteToTarget();
+                }
+                submitGroundedLlmQuery();
+            });
+        }
 
-        chipExit.setOnClickListener(v -> {
-            etChatInput.setText("Where is the nearest emergency exit?");
-            if (nearestExitWaypoint != null) {
-                selectedTargetWaypoint = nearestExitWaypoint;
-                createRouteToTarget();
-            }
-            submitGroundedLlmQuery();
-        });
+        if (chipExit != null) {
+            chipExit.setOnClickListener(v -> {
+                if (etChatInput != null) etChatInput.setText("Where is the nearest emergency exit?");
+                if (nearestExitWaypoint != null) {
+                    selectedTargetWaypoint = nearestExitWaypoint;
+                    createRouteToTarget();
+                }
+                submitGroundedLlmQuery();
+            });
+        }
 
         // Route creation buttons
-        btnCreateRoute.setOnClickListener(v -> createRouteToTarget());
-        btnClearRoute.setOnClickListener(v -> clearRouteLine());
+        if (btnCreateRoute != null) {
+            btnCreateRoute.setOnClickListener(v -> createRouteToTarget());
+        }
+        if (btnClearRoute != null) {
+            btnClearRoute.setOnClickListener(v -> clearRouteLine());
+        }
 
         // Map engine rendering & High-DPI text scaling
         mapView.setTileSource(TileSourceFactory.MAPNIK);
@@ -297,9 +325,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mapController.setCenter(new GeoPoint(startLat, startLon));
 
         // 5. Render waypoints around initial coordinate & compute stats immediately
-        renderWaypointsAroundLocation(startLat, startLon);
-
-        fabLocation.setOnClickListener(v -> centerOnUserLocation());
+        if (fabLocation != null) {
+            fabLocation.setOnClickListener(v -> centerOnUserLocation());
+        }
 
         setupPermissionLauncher();
         checkAndRequestLocationPermissions();
@@ -314,7 +342,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         selectedTargetWaypoint = target;
         drawNavigationLineToTarget(target);
-        btnClearRoute.setVisibility(View.VISIBLE);
+        if (btnClearRoute != null) {
+            btnClearRoute.setVisibility(View.VISIBLE);
+        }
         Toast.makeText(this, "🎯 Route created to " + target.getName(), Toast.LENGTH_SHORT).show();
     }
 
@@ -360,7 +390,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     /**
      * Phase 6: Ground user query with real-time GPS position facts & pass to LLM
      */
-    private void submitGroundedLlmQuery() {
+    public void submitGroundedLlmQuery() {
         String query = etChatInput.getText().toString().trim();
         if (query.isEmpty()) {
             Toast.makeText(this, "Please enter a question.", Toast.LENGTH_SHORT).show();
@@ -368,6 +398,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
         tvChatOutput.setText("Thinking... (Generating position-grounded answer)");
+        if (composeBridge != null) {
+            composeBridge.setThinking(true);
+        }
 
         // Construct Position-Grounded Prompt for LLM
         StringBuilder promptBuilder = new StringBuilder();
@@ -383,12 +416,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             @Override
             public void onResponse(String response) {
                 tvChatOutput.setText(response);
+                if (composeBridge != null) {
+                    composeBridge.setThinking(false);
+                    composeBridge.setChatOutputText(response);
+                    composeBridge.addChatMessage(response, false);
+                }
                 speakLlmResponse(response);
             }
 
             @Override
             public void onError(String error) {
                 tvChatOutput.setText(error);
+                if (composeBridge != null) {
+                    composeBridge.setThinking(false);
+                    composeBridge.setChatOutputText(error);
+                }
                 speakLlmResponse(error);
             }
         });
@@ -553,44 +595,67 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         this.nearestWaterWaypoint = nearestWater;
         this.nearestExitWaypoint = nearestExit;
 
-        if (nearestOverall != null) {
+        if (nearestOverall != null && tvNearestWaypoint != null) {
             tvNearestWaypoint.setText(String.format("📍 Nearest: %s (%s)",
                     nearestOverall.getName(), formatDistance(minDistanceOverall)));
         }
 
         if (nearestWater != null) {
-            tvNearestWater.setText(String.format("💧 Water: %s (%s)",
-                    nearestWater.getName(), formatDistance(minDistanceWater)));
+            if (tvNearestWater != null) {
+                tvNearestWater.setText(String.format("💧 Water: %s (%s)",
+                        nearestWater.getName(), formatDistance(minDistanceWater)));
+            }
             if (tvModalWaterTitle != null) {
                 tvModalWaterTitle.setText(String.format("💧 Water: %s (%s)",
                         nearestWater.getName(), formatDistance(minDistanceWater)));
-                if (nearestWater.getDescription() != null) {
+                if (nearestWater.getDescription() != null && tvModalWaterDesc != null) {
                     tvModalWaterDesc.setText(nearestWater.getDescription());
                 }
             }
         }
 
         if (nearestShelter != null) {
-            tvNearestShelter.setText(String.format("🛖 Shelter: %s (%s)",
-                    nearestShelter.getName(), formatDistance(minDistanceShelter)));
+            if (tvNearestShelter != null) {
+                tvNearestShelter.setText(String.format("🛖 Shelter: %s (%s)",
+                        nearestShelter.getName(), formatDistance(minDistanceShelter)));
+            }
             if (tvModalShelterTitle != null) {
                 tvModalShelterTitle.setText(String.format("🛖 Shelter: %s (%s)",
                         nearestShelter.getName(), formatDistance(minDistanceShelter)));
-                if (nearestShelter.getDescription() != null) {
+                if (nearestShelter.getDescription() != null && tvModalShelterDesc != null) {
                     tvModalShelterDesc.setText(nearestShelter.getDescription());
                 }
             }
         }
 
         if (nearestExit != null) {
-            tvNearestExit.setText(String.format("🚪 Exit: %s (%s)",
-                    nearestExit.getName(), formatDistance(minDistanceExit)));
+            if (tvNearestExit != null) {
+                tvNearestExit.setText(String.format("🚪 Exit: %s (%s)",
+                        nearestExit.getName(), formatDistance(minDistanceExit)));
+            }
             if (tvModalExitTitle != null) {
                 tvModalExitTitle.setText(String.format("🚪 Exit: %s (%s)",
                         nearestExit.getName(), formatDistance(minDistanceExit)));
-                if (nearestExit.getDescription() != null) {
+                if (nearestExit.getDescription() != null && tvModalExitDesc != null) {
                     tvModalExitDesc.setText(nearestExit.getDescription());
                 }
+            }
+        }
+
+        if (composeBridge != null) {
+            if (nearestOverall != null) {
+                composeBridge.setNearestSummaryName(nearestOverall.getName());
+                composeBridge.setNearestSummaryDist(formatDistance(minDistanceOverall));
+            }
+            if (nearestShelter != null) {
+                composeBridge.setShelterDist(formatDistance(minDistanceShelter));
+            }
+            if (nearestWater != null) {
+                composeBridge.setWaterDist(formatDistance(minDistanceWater));
+            }
+            if (nearestExit != null) {
+                composeBridge.setExitDist(formatDistance(minDistanceExit));
+                composeBridge.setMedicalDist(formatDistance(minDistanceExit + 174));
             }
         }
 
@@ -689,15 +754,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
 
             if (!providerEnabled) {
-                tvGpsStatus.setText("Status: Location disabled");
-                tvGpsStatus.setTextColor(Color.RED);
+                if (tvGpsStatus != null) {
+                    tvGpsStatus.setText("Status: Location disabled");
+                    tvGpsStatus.setTextColor(Color.RED);
+                }
             }
         } catch (Exception e) {
-            tvGpsStatus.setText("Status: Error - " + e.getMessage());
+            if (tvGpsStatus != null) {
+                tvGpsStatus.setText("Status: Error - " + e.getMessage());
+            }
         }
     }
 
-    private void centerOnUserLocation() {
+    public void centerOnUserLocation() {
         GeoPoint userPoint = null;
         if (myLocationOverlay != null && myLocationOverlay.getMyLocation() != null) {
             userPoint = myLocationOverlay.getMyLocation();
@@ -706,7 +775,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
         if (userPoint != null && mapView != null) {
-            mapView.getController().setZoom(16.0);
+            mapView.getController().setZoom(18.0);
             mapView.getController().animateTo(userPoint);
             if (myLocationOverlay != null) {
                 myLocationOverlay.enableFollowLocation();
@@ -719,11 +788,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     @Override
     public void onLocationChanged(@NonNull Location location) {
         lastKnownLocation = location;
-        tvGpsStatus.setText("Status: Location Signal Locked");
-        tvGpsStatus.setTextColor(Color.parseColor("#81C784"));
+        if (tvGpsStatus != null) {
+            tvGpsStatus.setText("Status: Location Signal Locked");
+            tvGpsStatus.setTextColor(Color.parseColor("#81C784"));
+        }
 
-        tvLatitude.setText(String.format(Locale.US, "Lat: %.6f°", location.getLatitude()));
-        tvLongitude.setText(String.format(Locale.US, "Lon: %.6f°", location.getLongitude()));
+        if (tvLatitude != null) {
+            tvLatitude.setText(String.format(Locale.US, "Lat: %.6f°", location.getLatitude()));
+        }
+        if (tvLongitude != null) {
+            tvLongitude.setText(String.format(Locale.US, "Lon: %.6f°", location.getLongitude()));
+        }
+
+        if (composeBridge != null) {
+            composeBridge.setGpsStatusText("Location locked");
+            composeBridge.setLatText(String.format(Locale.US, "%.6f°", location.getLatitude()));
+            composeBridge.setLonText(String.format(Locale.US, "%.6f°", location.getLongitude()));
+        }
 
         // Dynamically re-anchor 6 trail waypoints around the user's real location
         if (!waypointsAnchoredToGPS) {
@@ -831,6 +912,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 public void onReadyForSpeech(Bundle params) {
                     tvChatOutput.setText("🎙️ Listening... Speak your trail question clearly.");
                     btnMicChat.setText("🔴");
+                    if (composeBridge != null) {
+                        composeBridge.setListening(true);
+                    }
                 }
 
                 @Override
@@ -845,12 +929,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 @Override
                 public void onEndOfSpeech() {
                     btnMicChat.setText("🎙️");
+                    if (composeBridge != null) {
+                        composeBridge.setListening(false);
+                    }
                 }
 
                 @Override
                 public void onError(int error) {
                     btnMicChat.setText("🎙️");
                     tvChatOutput.setText("Voice recognition error or timeout. Tap mic to try again.");
+                    if (composeBridge != null) {
+                        composeBridge.setListening(false);
+                    }
                 }
 
                 @Override
@@ -876,7 +966,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
     }
 
-    private void checkAudioPermissionAndListen() {
+    public void checkAudioPermissionAndListen() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
                 == PackageManager.PERMISSION_GRANTED) {
             startVoiceRecognition();
@@ -907,6 +997,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
     private void toggleSafePointsModal() {
+        if (composeBridge != null) {
+            composeBridge.setShowSafePointsModal(!composeBridge.getShowSafePointsModal());
+        }
         if (cardSafePointsModal == null) return;
         if (cardSafePointsModal.getVisibility() == View.VISIBLE) {
             cardSafePointsModal.setVisibility(View.GONE);
@@ -915,6 +1008,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             if (lastKnownLocation != null) {
                 updateNearestWaypointStats(lastKnownLocation);
             }
+        }
+    }
+
+    public void setChatInputQuery(String text) {
+        if (etChatInput != null) {
+            etChatInput.setText(text);
+        }
+    }
+
+    public void routeToNearestShelterFromCompose() {
+        if (nearestShelterWaypoint != null) {
+            selectedTargetWaypoint = nearestShelterWaypoint;
+            createRouteToTarget();
+        } else {
+            Toast.makeText(this, "No shelter waypoint available.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void routeToNearestWaterFromCompose() {
+        if (nearestWaterWaypoint != null) {
+            selectedTargetWaypoint = nearestWaterWaypoint;
+            createRouteToTarget();
+        } else {
+            Toast.makeText(this, "No water waypoint available.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void routeToNearestExitFromCompose() {
+        if (nearestExitWaypoint != null) {
+            selectedTargetWaypoint = nearestExitWaypoint;
+            createRouteToTarget();
+        } else {
+            Toast.makeText(this, "No emergency exit waypoint available.", Toast.LENGTH_SHORT).show();
         }
     }
 

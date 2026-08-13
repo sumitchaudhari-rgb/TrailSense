@@ -1,618 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout 
+<!--
+  activity_main.xml — NestedScrollView for full-page scroll.
+  Chat section uses a fixed-height box; inner Column+verticalScroll cooperates
+  correctly with NestedScrollView (unlike LazyColumn which breaks interop).
+-->
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootScrollView"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#121212"
+    android:background="#F4F6F8"
+    android:fillViewport="true"
     tools:context=".MainActivity">
 
-    <org.osmdroid.views.MapView
-        android:id="@+id/mapView"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <!-- Top GPS Status & Coordinates Floating Glass Card -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardGpsOverlay"
-        android:layout_width="0dp"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="14dp"
-        app:cardBackgroundColor="#EE1E2923"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
-        app:strokeColor="#33FFFFFF"
-        app:strokeWidth="1dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        android:orientation="vertical">
 
-        <LinearLayout
+        <!-- 1. Header Cards (Status + Lat/Lon + Nearest + 2x2 grid) -->
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/composeHeaderCards"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
+            android:background="@android:color/transparent" />
 
-            <LinearLayout
+        <!-- 2. Map View — fixed 240dp with location FAB -->
+        <FrameLayout
+            android:id="@+id/mapContainer"
+            android:layout_width="match_parent"
+            android:layout_height="240dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginVertical="6dp">
+
+            <org.osmdroid.views.MapView
+                android:id="@+id/mapView"
                 android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fabLocation"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:layout_gravity="bottom|end"
+                android:layout_margin="10dp"
+                android:contentDescription="Center Location"
+                app:backgroundTint="#FFFFFF"
+                app:srcCompat="@android:drawable/ic_menu_mylocation"
+                app:tint="#388E3C"
+                app:maxImageSize="20dp" />
 
-                <TextView
-                    android:id="@+id/tvGpsDot"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🟢 "
-                    android:textSize="12sp" />
+        </FrameLayout>
 
-                <TextView
-                    android:id="@+id/tvGpsStatus"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Status: Acquiring GPS signal..."
-                    android:textColor="#81C784"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Offline Mode"
-                    android:textColor="#B0BEC5"
-                    android:textSize="11sp"
-                    android:textStyle="italic" />
-
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tvLatitude"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Lat: --"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-                <TextView
-                    android:id="@+id/tvLongitude"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Lon: --"
-                    android:textColor="#FFFFFF"
-                    android:textSize="12sp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Live Trail & Nearest Waypoints Card with Route Buttons -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardNearestOverlay"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="14dp"
-        android:layout_marginTop="6dp"
-        app:cardBackgroundColor="#EE1E2923"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="8dp"
-        app:strokeColor="#33FFFFFF"
-        app:strokeWidth="1dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardGpsOverlay">
-
-        <LinearLayout
+        <!-- 3. Chat / AI Guide — wrap_content; inner scroll is a Column+verticalScroll
+             which cooperates with NestedScrollView via nested scroll protocol -->
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/composeChatSheet"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tvNearestHeader"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="📊 Live Trail Tracking"
-                    android:textColor="#64B5F6"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSafePointsQuick"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="0dp"
-                    android:text="🚨 Safe Points"
-                    android:textColor="#81C784"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCreateRoute"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="2dp"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="0dp"
-                    android:text="🛣️ Route"
-                    android:textColor="#64B5F6"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnClearRoute"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="32dp"
-                    android:layout_marginStart="4dp"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="0dp"
-                    android:text="❌ Clear"
-                    android:textColor="#FF8A80"
-                    android:textSize="11sp"
-                    android:visibility="gone" />
-
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tvNearestWaypoint"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="📍 Nearest Waypoint: Calculating..."
-                android:textColor="#FFFFFF"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tvNearestWater"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="💧 Water: --"
-                    android:textColor="#4FC3F7"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/tvNearestShelter"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="🛖 Shelter: --"
-                    android:textColor="#FFB74D"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/tvNearestExit"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="🚪 Exit: --"
-                    android:textColor="#81C784"
-                    android:textSize="11sp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Phase 9 Dedicated Safe-Point Finder Modal Panel -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardSafePointsModal"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="14dp"
-        android:layout_marginTop="8dp"
-        android:visibility="gone"
-        app:cardBackgroundColor="#F7152018"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="16dp"
-        app:strokeColor="#6681C784"
-        app:strokeWidth="1.5dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/cardNearestOverlay">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
-
-            <!-- Title & Close Bar -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="🚨 Nearest Safe Points"
-                    android:textColor="#81C784"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnCloseSafePoints"
-                    style="@style/Widget.MaterialComponents.Button.TextButton"
-                    android:layout_width="36dp"
-                    android:layout_height="36dp"
-                    android:padding="0dp"
-                    android:text="✖"
-                    android:textColor="#B0BEC5"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
-            <!-- Safe Point Item 1: Shelter -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="#22FFB74D"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="8dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvModalShelterTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🛖 Shelter: --"
-                        android:textColor="#FFB74D"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvModalShelterDesc"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Emergency trail shelter"
-                        android:textColor="#E0E0E0"
-                        android:textSize="10sp" />
-
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRouteShelter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="6dp"
-                    android:paddingHorizontal="8dp"
-                    android:text="Route 🗺️"
-                    android:textColor="#121212"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="#FFB74D"
-                    app:cornerRadius="8dp" />
-
-            </LinearLayout>
-
-            <!-- Safe Point Item 2: Water -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:background="#224FC3F7"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="8dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvModalWaterTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="💧 Water: --"
-                        android:textColor="#4FC3F7"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvModalWaterDesc"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Potable drinking water point"
-                        android:textColor="#E0E0E0"
-                        android:textSize="10sp" />
-
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRouteWater"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="6dp"
-                    android:paddingHorizontal="8dp"
-                    android:text="Route 🗺️"
-                    android:textColor="#121212"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="#4FC3F7"
-                    app:cornerRadius="8dp" />
-
-            </LinearLayout>
-
-            <!-- Safe Point Item 3: Exit -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:background="#2281C784"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:padding="8dp">
-
-                <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
-
-                    <TextView
-                        android:id="@+id/tvModalExitTitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="🚪 Exit: --"
-                        android:textColor="#81C784"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvModalExitDesc"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="2dp"
-                        android:text="Trailhead emergency exit point"
-                        android:textColor="#E0E0E0"
-                        android:textSize="10sp" />
-
-                </LinearLayout>
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRouteExit"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:layout_marginStart="6dp"
-                    android:paddingHorizontal="8dp"
-                    android:text="Route 🗺️"
-                    android:textColor="#121212"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    app:backgroundTint="#81C784"
-                    app:cornerRadius="8dp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Bottom On-Device AI Chat Assistant Card (Phase 6 Premium UI) -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardChatOverlay"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_margin="14dp"
-        app:cardBackgroundColor="#FA2A1B3D"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="12dp"
-        app:strokeColor="#449C27B0"
-        app:strokeWidth="1dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
-
-            <!-- Chat Title Bar & Status -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tvChatHeader"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="🤖 TrailSense AI Guide"
-                    android:textColor="#E1BEE7"
-                    android:textSize="14sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="#33BA68C8"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="3dp"
-                    android:text="100% Offline AI"
-                    android:textColor="#CE93D8"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-            </LinearLayout>
-
-            <!-- Quick Action Suggestion Chips -->
-            <HorizontalScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:scrollbars="none">
-
-                <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal">
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipShelter"
-                        style="@style/Widget.MaterialComponents.Chip.Action"
-                        android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:layout_marginEnd="6dp"
-                        android:text="🛖 Nearest Shelter?"
-                        android:textColor="#FFFFFF"
-                        app:chipBackgroundColor="#447B1FA2"
-                        app:chipStrokeColor="#88BA68C8"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipWater"
-                        style="@style/Widget.MaterialComponents.Chip.Action"
-                        android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:layout_marginEnd="6dp"
-                        android:text="💧 Water Source?"
-                        android:textColor="#FFFFFF"
-                        app:chipBackgroundColor="#440288D1"
-                        app:chipStrokeColor="#884FC3F7"
-                        app:chipStrokeWidth="1dp" />
-
-                    <com.google.android.material.chip.Chip
-                        android:id="@+id/chipExit"
-                        style="@style/Widget.MaterialComponents.Chip.Action"
-                        android:layout_width="wrap_content"
-                        android:layout_height="32dp"
-                        android:text="🚪 Emergency Exit?"
-                        android:textColor="#FFFFFF"
-                        app:chipBackgroundColor="#44388E3C"
-                        app:chipStrokeColor="#8881C784"
-                        app:chipStrokeWidth="1dp" />
-
-                </LinearLayout>
-
-            </HorizontalScrollView>
-
-            <!-- AI Response Display Bubble -->
-            <TextView
-                android:id="@+id/tvChatOutput"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:background="#33FFFFFF"
-                android:padding="10dp"
-                android:text="Ask me anything about shelters, water points, or your position!"
-                android:textColor="#F3E5F5"
-                android:textSize="12sp" />
-
-            <!-- Input Row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <EditText
-                    android:id="@+id/etChatInput"
-                    android:layout_width="0dp"
-                    android:layout_height="44dp"
-                    android:layout_weight="1"
-                    android:background="#22FFFFFF"
-                    android:hint="Ask your trail question..."
-                    android:textColorHint="#90E1BEE7"
-                    android:inputType="text"
-                    android:paddingHorizontal="12dp"
-                    android:textColor="#FFFFFF"
-                    android:textSize="13sp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnMicChat"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="6dp"
-                    android:padding="0dp"
-                    android:text="🎙️"
-                    android:textColor="#FFFFFF"
-                    android:textSize="16sp"
-                    app:backgroundTint="#6A1B9A"
-                    app:cornerRadius="10dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSendChat"
-                    android:layout_width="wrap_content"
-                    android:layout_height="44dp"
-                    android:layout_marginStart="6dp"
-                    android:text="Ask"
-                    android:textAllCaps="false"
-                    android:textColor="#FFFFFF"
-                    android:textSize="13sp"
-                    app:backgroundTint="#8E24AA"
-                    app:cornerRadius="10dp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
-
-    <!-- Location Re-center Floating Action Button -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabLocation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="14dp"
-        android:layout_marginBottom="14dp"
-        android:contentDescription="Center Location"
-        app:backgroundTint="#8E24AA"
-        app:srcCompat="@android:drawable/ic_menu_mylocation"
-        app:tint="#FFFFFF"
-        app:layout_constraintBottom_toTopOf="@id/cardChatOverlay"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+            android:background="@android:color/transparent" />
+
+        <Space android:layout_width="match_parent" android:layout_height="12dp" />
+
+        <!-- HIDDEN DATA WIRES — visibility="gone", used by Java logic only -->
+        <TextView android:id="@+id/tvGpsStatus"    android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvLatitude"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvLongitude"    android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvNearestWaypoint"  android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvNearestWater"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvNearestShelter"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvNearestExit"      android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvChatOutput"       android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <EditText android:id="@+id/etChatInput"        android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnSendChat"        android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnMicChat"         android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnCreateRoute"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnClearRoute"      android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnSafePointsQuick" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.chip.Chip android:id="@+id/chipShelter" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.chip.Chip android:id="@+id/chipWater"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.chip.Chip android:id="@+id/chipExit"    android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <View android:id="@+id/cardSafePointsModal"      android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnCloseSafePoints"  android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvModalShelterTitle"  android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvModalShelterDesc"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnRouteShelter"  android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvModalWaterTitle"    android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvModalWaterDesc"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnRouteWater"    android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvModalExitTitle"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <TextView android:id="@+id/tvModalExitDesc"      android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton android:id="@+id/btnRouteExit"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+
+    </LinearLayout>
+
+</androidx.core.widget.NestedScrollView>
