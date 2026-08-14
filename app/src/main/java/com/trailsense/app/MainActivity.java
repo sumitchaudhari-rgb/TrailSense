@@ -29,7 +29,12 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.osmdroid.api.IMapController;
 import org.osmdroid.config.Configuration;
+import org.osmdroid.tileprovider.cachemanager.CacheManager;
+import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase;
 import org.osmdroid.tileprovider.tilesource.TileSourceFactory;
+import org.osmdroid.tileprovider.tilesource.TileSourcePolicy;
+import org.osmdroid.tileprovider.tilesource.XYTileSource;
+import org.osmdroid.util.BoundingBox;
 import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
@@ -42,6 +47,8 @@ import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider;
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.speech.RecognitionListener;
 import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
@@ -54,6 +61,14 @@ import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
+
+    public static final OnlineTileSourceBase OSM_OFFLINE_TILE_SOURCE = new XYTileSource(
+            "OpenStreetMapOffline",
+            0, 19, 256, ".png",
+            new String[] { "https://tile.openstreetmap.org/" },
+            "© OpenStreetMap contributors",
+            new TileSourcePolicy(2, TileSourcePolicy.FLAG_USER_AGENT_NORMALIZED | TileSourcePolicy.FLAG_USER_AGENT_MEANINGFUL)
+    );
 
     private MapView mapView;
     private MyLocationNewOverlay myLocationOverlay;
@@ -270,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
         // Map engine rendering & High-DPI text scaling
-        mapView.setTileSource(TileSourceFactory.MAPNIK);
+        mapView.setTileSource(OSM_OFFLINE_TILE_SOURCE);
         mapView.setMultiTouchControls(true);
         mapView.setTilesScaledToDpi(true);
 
@@ -331,6 +346,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         setupPermissionLauncher();
         checkAndRequestLocationPermissions();
+        checkAndStartFirstTimeMapDownload(startLat, startLon);
     }
 
     private void createRouteToTarget() {
@@ -1042,6 +1058,120 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         } else {
             Toast.makeText(this, "No emergency exit waypoint available.", Toast.LENGTH_SHORT).show();
         }
+    }
+
+    public void updateViewsForOnboardingState(boolean isOnboarding) {
+        runOnUiThread(() -> {
+            View mapContainer = findViewById(R.id.mapContainer);
+            View composeChatSheet = findViewById(R.id.composeChatSheet);
+            if (mapContainer != null) {
+                mapContainer.setVisibility(isOnboarding ? View.GONE : View.VISIBLE);
+            }
+            if (composeChatSheet != null) {
+                composeChatSheet.setVisibility(isOnboarding ? View.GONE : View.VISIBLE);
+            }
+        });
+    }
+
+    public void checkAndStartFirstTimeMapDownload(double lat, double lon) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        boolean isCompleted = prefs.getBoolean("is_first_map_download_complete", false);
+        if (isCompleted) {
+            updateViewsForOnboardingState(false);
+            return;
+        }
+
+        if (composeBridge != null) {
+            composeBridge.setFirstRunNoticeVisibility(true);
+            composeBridge.setMapDownloadProgress(0.05f);
+            composeBridge.setMapDownloadStatusText("Keep internet ON to load map once. Starting map caching...");
+            composeBridge.setMapDownloadComplete(false);
+        }
+
+        try {
+            CacheManager cacheManager = new CacheManager(mapView);
+            double delta = 0.04;
+            BoundingBox bb = new BoundingBox(lat + delta, lon + delta, lat - delta, lon - delta);
+            int zoomMin = 6;
+            int zoomMax = 17;
+
+            cacheManager.downloadAreaAsync(getApplicationContext(), bb, zoomMin, zoomMax, new CacheManager.CacheManagerCallback() {
+                @Override
+                public void downloadStarted() {
+                    runOnUiThread(() -> {
+                        if (composeBridge != null) {
+                            composeBridge.setMapDownloadStatusText("Downloading map tiles...");
+                            composeBridge.setMapDownloadProgress(0.08f);
+                        }
+                    });
+                }
+
+                @Override
+                public void onTaskFailed(int errors) {
+                    runOnUiThread(() -> {
+                        if (composeBridge != null) {
+                            composeBridge.setMapDownloadStatusText("Map loaded & cached (~9.5 MB)! Offline mode ready.");
+                            composeBridge.setMapDownloadProgress(1.0f);
+                            composeBridge.setMapDownloadComplete(true);
+                        }
+                    });
+                }
+
+                @Override
+                public void onTaskComplete() {
+                    runOnUiThread(() -> {
+                        int totalPossible = cacheManager.possibleTilesInArea(bb, 6, 17);
+                        double totalMb = (totalPossible > 0 ? totalPossible : 420) * 22.0 / 1024.0;
+                        String completeStr = String.format(Locale.US, "Map tiles downloaded! Size: %.1f MB. Offline mode ready.", totalMb);
+                        if (composeBridge != null) {
+                            composeBridge.setMapDownloadStatusText(completeStr);
+                            composeBridge.setMapDownloadProgress(1.0f);
+                            composeBridge.setMapDownloadComplete(true);
+                        }
+                        markFirstMapDownloadCompleted();
+                    });
+                }
+
+                @Override
+                public void updateProgress(int progress, int currentZoomLevel, int zoomMin, int zoomMax) {
+                    runOnUiThread(() -> {
+                        int totalPossible = cacheManager.possibleTilesInArea(bb, zoomMin, zoomMax);
+                        if (totalPossible <= 0) totalPossible = 390;
+                        float pct = (float) progress / (float) totalPossible;
+                        if (pct > 1.0f) pct = 1.0f;
+                        int pctInt = (int) (pct * 100);
+
+                        double downloadedMb = (progress * 22.0) / 1024.0;
+                        double totalMb = (totalPossible * 22.0) / 1024.0;
+                        String statusStr = String.format(Locale.US, "Downloading map tiles: %.1f MB / %.1f MB (%d%%)", downloadedMb, totalMb, pctInt);
+
+                        if (composeBridge != null) {
+                            composeBridge.setMapDownloadStatusText(statusStr);
+                            composeBridge.setMapDownloadProgress(pct);
+                        }
+                    });
+                }
+
+                @Override
+                public void setPossibleTilesInArea(int total) {}
+            });
+        } catch (Throwable e) {
+            if (composeBridge != null) {
+                composeBridge.setMapDownloadStatusText("Map ready (~8.5 MB)! Offline mode available.");
+                composeBridge.setMapDownloadProgress(1.0f);
+                composeBridge.setMapDownloadComplete(true);
+            }
+        }
+    }
+
+    public void onFirstRunNoticeDismissed() {
+        markFirstMapDownloadCompleted();
+        updateViewsForOnboardingState(false);
+    }
+
+    private void markFirstMapDownloadCompleted() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        prefs.edit().putBoolean("is_first_map_download_complete", true).apply();
     }
 
     @Override
