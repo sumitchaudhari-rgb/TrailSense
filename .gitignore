@@ -9,3 +9,10 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# AI Model Fine-Tuning & Datasets
+phase11_*
+*.ipynb
+*_dataset.json
+*.gguf
+*.bin
