@@ -418,15 +418,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             composeBridge.setThinking(true);
         }
 
-        // Construct Position-Grounded Prompt for LLM
+        // Construct Position-Grounded Prompt for Llama 3.2 LLM
         StringBuilder promptBuilder = new StringBuilder();
-        promptBuilder.append("System: You are TrailSense AI, an offline mountain trail assistant.\n");
+        promptBuilder.append("<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n");
+        promptBuilder.append("You are TrailSense AI, an offline mountain trail assistant with English, Hindi, and Marathi support.\n");
         promptBuilder.append("Current GPS: ").append(tvLatitude.getText()).append(", ").append(tvLongitude.getText()).append("\n");
         promptBuilder.append("Nearest Waypoint: ").append(tvNearestWaypoint.getText()).append("\n");
         promptBuilder.append("Nearest Water Point: ").append(tvNearestWater.getText()).append("\n");
         promptBuilder.append("Nearest Shelter: ").append(tvNearestShelter.getText()).append("\n");
         promptBuilder.append("Nearest Emergency Exit: ").append(tvNearestExit.getText()).append("\n");
+        promptBuilder.append("<|eot_id|><|start_header_id|>user<|end_header_id|>\n");
         promptBuilder.append("User Question: ").append(query).append("\n");
+        promptBuilder.append("<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n");
 
         llmAssistant.generateResponse(promptBuilder.toString(), new LlmAssistant.ResponseListener() {
             @Override
@@ -896,15 +899,57 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private void initTextToSpeech() {
         textToSpeech = new TextToSpeech(this, status -> {
             if (status == TextToSpeech.SUCCESS) {
-                textToSpeech.setLanguage(Locale.US);
+                // Initialize default language
+                textToSpeech.setLanguage(new Locale("mr", "IN"));
             }
         });
     }
 
     private void speakLlmResponse(String text) {
-        if (textToSpeech != null && text != null && !text.isEmpty()) {
-            textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TrailSenseTTS");
+        if (textToSpeech == null || text == null || text.trim().isEmpty()) {
+            return;
         }
+
+        // Clean emojis, technical headers, and markdown for natural voice output
+        String speakableText = text.replaceAll("[\\x{1F600}-\\x{1F64F}\\x{1F300}-\\x{1F5FF}\\x{1F680}-\\x{1F6FF}\\x{2600}-\\x{26FF}\\x{2700}-\\x{27BF}]", "")
+                                   .replace("[Llama 3.2 Position Grounded]", "")
+                                   .replace("Answer:", "")
+                                   .replace("उत्तर:", "")
+                                   .replace("QUESTION:", "")
+                                   .trim();
+
+        if (speakableText.isEmpty()) return;
+
+        // Detect language & switch TTS Locale
+        Locale targetLocale = Locale.US;
+        if (isMarathiText(speakableText)) {
+            targetLocale = new Locale("mr", "IN");
+        } else if (isHindiText(speakableText)) {
+            targetLocale = new Locale("hi", "IN");
+        }
+
+        int result = textToSpeech.setLanguage(targetLocale);
+        if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+            // Fallback to Hindi or US English if specific voice pack missing
+            result = textToSpeech.setLanguage(new Locale("hi", "IN"));
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                textToSpeech.setLanguage(Locale.US);
+            }
+        }
+
+        textToSpeech.speak(speakableText, TextToSpeech.QUEUE_FLUSH, null, "TrailSenseTTS");
+    }
+
+    private boolean isMarathiText(String text) {
+        return text.contains("कुठे") || text.contains("अंतरावर") || text.contains("सध्याचे") || 
+               text.contains("निवारा") || text.contains("पाणी") || text.contains("पंतप्रधान") || 
+               text.contains("आहे") || text.contains("आहेत") || text.contains("ठिकाण");
+    }
+
+    private boolean isHindiText(String text) {
+        return text.contains("वर्तमान") || text.contains("दूरी") || text.contains("निकटतम") || 
+               text.contains("प्रधानमंत्री") || text.contains("राजधानी") || text.contains("आश्रय") || 
+               text.contains("है") || text.contains("हैं");
     }
 
     private void setupAudioPermissionLauncher() {
