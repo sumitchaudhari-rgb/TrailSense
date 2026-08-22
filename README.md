@@ -113,7 +113,7 @@ When TrailSense is launched for the first time with an active internet connectio
 
 ---
 
-## 🧠 AI Model Fine-Tuning Pipeline (Phase 11)
+## 🧠 AI Model Fine-Tuning Pipeline
 
 TrailSense features a local fine-tuning pipeline to train specialized Hindi/Marathi disaster response and trail guidance models:
 
