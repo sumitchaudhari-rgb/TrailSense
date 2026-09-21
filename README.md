@@ -113,25 +113,6 @@ When TrailSense is launched for the first time with an active internet connectio
 
 ---
 
-## 🧠 AI Model Fine-Tuning Pipeline
-
-TrailSense features a local fine-tuning pipeline to train specialized Hindi/Marathi disaster response and trail guidance models:
-
-1. **Dataset:** `phase11_dataset.json` contains specialized emergency QA pairs.
-2. **Notebook Generation:** Run `python phase11_generate_notebook.py` to generate `phase11_finetune.ipynb`.
-3. **Training & Export:** Open the notebook in Google Colab (T4 GPU), train with Unsloth LoRA, and export to `trailsense_hindi_marathi-Q4_K_M.gguf`.
-4. **Android Deployment:** Place the exported GGUF model into `app/src/main/assets/` to load on-device inference via `LlmAssistant.java`.
-
----
-
-## 📱 Cross-Platform (iOS & Android) Roadmap
-
-An architectural plan has been designed to port TrailSense to **React Native** for simultaneous iOS & Android support:
-- **Map Engine:** Migration from `osmdroid` to MapLibre Native (`@rnmaplibre/maplibre-react-native`) with offline `.mbtiles` packages.
-- **Local AI Engine:** Migration to `react-native-llama` for C++ `llama.cpp` JSI inference across iOS Metal and Android NDK.
-
----
-
 ## 📄 License
 
 This project is developed for emergency navigation and research purposes. Distributed under the **MIT License**.
